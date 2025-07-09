@@ -1,69 +1,106 @@
-import Logo from "../assets/Logo.svg"
+import { Link } from "react-router-dom";
+import Logo from "../assets/Logo.svg";
 
 export const Topbar = () => {
   return (
-    <>
-      <div className="navbar bg-base-100 shadow-sm">
-        <div className="navbar-start">
-          <div className="dropdown">
-            <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                {" "}
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h8m-8 6h16"
-                />{" "}
-              </svg>
-            </div>
-            <ul
-              tabIndex={0}
-              className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
+    <div
+      className="navbar shadow-md text-white"
+      style={{ backgroundColor: "#093FB4" }}
+    >
+      <div className="navbar-start">
+        <div className="dropdown lg:hidden">
+          <label tabIndex={0} className="btn btn-ghost text-white">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <li>
-                <a>Home</a>
-              </li>
-              <li>
-                <a>Events</a>
-              </li>
-              <li>
-                <a>Venues</a>
-              </li>
-            </ul>
-          </div>
-          <a className="btn btn-ghost text-xl">
-            <img src={Logo} alt="Website Logo" />
-            <p style={{ color: "093FB4" }} className="text-base">
-              Tic<span>Kenya</span>
-            </p>
-          </a>
-        </div>
-        <div className="navbar-center hidden lg:flex">
-          <ul className="menu menu-horizontal px-1">
-            <li>
-              <a>Home</a>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </label>
+          <ul
+            tabIndex={0}
+            className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-white text-black rounded-box w-52"
+          >
+            <li className=" btn-ghost border-b-1 hover:underline">
+              <Link to="/">Home</Link>
             </li>
-            <li>
-              <a>Events</a>
+            <li className=" btn-ghost border-b-1 hover:underline">
+              <Link to="/events">Events</Link>
             </li>
-            <li>
-              <a>Venues</a>
+            <li className=" btn-ghost border-b-1 hover:underline">
+              <Link to="/blogs">Blogs</Link>
+            </li>
+            <li className=" btn-ghost border-b-1 hover:underline">
+              <Link to="/venues">Contact Us</Link>
+            </li>
+            <li className=" btn-ghost border-b-1 hover:underline">
+              <Link to="/login">Login</Link>
+            </li>
+            <li className=" btn-ghost border-b-1 hover:underline">
+              <Link to="/register">Sign Up</Link>
             </li>
           </ul>
         </div>
-        <div className="navbar-end">
-          <a className="btn">Sign Up/Login</a>
-          {/* Sign Up and Login */}
 
-        </div>
+        <Link to="/" className="flex items-center gap-2 ml-2">
+          <img src={Logo} alt="Logo" className="h-8 w-8" />
+          <span className="text-lg font-semibold">
+            <span className="text-white">Tic</span>
+            <span style={{ color: "#ED3500" }}>Kenya</span>
+          </span>
+        </Link>
       </div>
-    </>
+
+      <div className="navbar-center hidden lg:flex">
+        <ul className="menu menu-horizontal px-1 text-white font-normal">
+          <li className="hover:underline">
+            <Link to="/">Home</Link>
+          </li>
+          <li className="hover:underline">
+            <Link to="/events">Events</Link>
+          </li>
+          <li className="hover:underline">
+            <Link to="/blogs">Blogs</Link>
+          </li>
+          <li className="hover:underline">
+            <Link to="/contact">Contact Us</Link>
+          </li>
+        </ul>
+      </div>
+
+      {/* Right - Action Buttons */}
+      <div className="navbar-end space-x-2 mr-2 hidden lg:flex">
+        <Link
+          to="/help"
+          className="bg-gray-100 text-black px-4 py-1 rounded-full text-sm font-medium"
+        >
+          Help
+        </Link>
+
+        {/* Login - blue background with white border */}
+        <Link
+          to="/login"
+          className="px-4 py-1 border border-white text-white rounded text-sm font-medium hover:bg-white hover:text-[#093FB4] transition-all duration-150"
+        >
+          Login
+        </Link>
+
+        {/* Sign Up - orange-red background */}
+        <Link
+          to="/register"
+          className="px-4 py-1 bg-[#ED3500] text-white rounded text-sm font-medium hover:opacity-90 transition-all duration-150"
+        >
+          Sign Up
+        </Link>
+      </div>
+    </div>
   );
-}
+};
