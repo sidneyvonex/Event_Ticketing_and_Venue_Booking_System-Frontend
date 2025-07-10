@@ -57,35 +57,33 @@ export const Topbar = () => {
             <span style={{ color: "#ED3500" }}>Kenya</span>
           </span>
         </Link>
-      </div>
-
-      <div className="navbar-center hidden lg:flex">
-        <ul className="menu menu-horizontal px-1 text-white font-normal">
-          <li className="hover:underline">
-            <Link to="/">Home</Link>
-          </li>
-          <li className="hover:underline">
-            <Link to="/events">Events</Link>
-          </li>
-          <li className="hover:underline">
-            <Link to="/blogs">Blogs</Link>
-          </li>
-          <li className="hover:underline">
-            <Link to="/contact">Contact Us</Link>
-          </li>
-        </ul>
+        <div className=" ml-10 hidden lg:flex">
+          <ul className="menu menu-horizontal px-1 text-white font-normal gap-4">
+            <li className="hover:underline">
+              <Link to="/">Home</Link>
+            </li>
+            <li className="hover:underline">
+              <Link to="/events">Events</Link>
+            </li>
+            <li className="hover:underline">
+              <Link to="/blogs">Blogs</Link>
+            </li>
+            <li className="hover:underline">
+              <Link to="/contact">Contact Us</Link>
+            </li>
+          </ul>
+        </div>
       </div>
 
       {/* Right - Action Buttons */}
       <div className="navbar-end space-x-2 mr-2 hidden lg:flex">
         <Link
           to="/help"
-          className="bg-gray-100 text-black px-4 py-1 rounded-full text-sm font-medium"
+          className="bg-gray-100 text-black px-4 py-1 rounded-full text-sm font-medium hover:underline"
         >
           Help
         </Link>
-
-        {/* Login - blue background with white border */}
+        <div className="flex justify-between ml-7">
         <Link
           to="/login"
           className="px-4 py-1 border border-white text-white rounded text-sm font-medium hover:bg-white hover:text-[#093FB4] transition-all duration-150"
@@ -93,13 +91,13 @@ export const Topbar = () => {
           Login
         </Link>
 
-        {/* Sign Up - orange-red background */}
         <Link
           to="/register"
           className="px-4 py-1 bg-[#ED3500] text-white rounded text-sm font-medium hover:opacity-90 transition-all duration-150"
         >
           Sign Up
         </Link>
+        </div>
       </div>
     </div>
   );

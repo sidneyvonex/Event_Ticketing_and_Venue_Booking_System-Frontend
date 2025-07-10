@@ -3,20 +3,50 @@ import { createBrowserRouter,RouterProvider } from 'react-router'
 import { Home } from './Pages/Home'
 import { NotFound } from './Pages/NotFound'
 import { Events } from './Pages/Events'
+import { Login } from './Pages/Login'
+import { Register } from './Pages/Register'
+import { Contact } from './Pages/Contact'
+import { Help } from './Pages/Help'
+import { Blog } from './Pages/Blog'
 
 function App() {
 const router = createBrowserRouter([
   {
-    path:'/',
-    element:<Home/>,
-    errorElement:<NotFound/>
+    path: "/",
+    element: <Home />,
+    errorElement: <NotFound />,
   },
   {
-    path:'events',
-    element:<Events/>,
-    errorElement:<NotFound/>
-  }
-])
+    path: "events",
+    element: <Events />,
+    errorElement: <NotFound />,
+  },
+  {
+    path: "login",
+    element: <Login />,
+    errorElement: <NotFound />,
+  },
+  {
+    path: "register",
+    element: <Register />,
+    errorElement: <NotFound />,
+  },
+  {
+    path: "contact",
+    element: <Contact />,
+    errorElement: <NotFound />,
+  },
+  {
+    path: "blogs",
+    element: <Blog />,
+    errorElement: <NotFound />,
+  },
+  {
+    path: "help",
+    element: <Help />,
+    errorElement: <NotFound />,
+  },
+]);
 
   return (
 
