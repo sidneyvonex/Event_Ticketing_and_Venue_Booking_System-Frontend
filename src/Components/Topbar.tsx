@@ -83,7 +83,7 @@ export const Topbar = () => {
         >
           Help
         </Link>
-        <div className="flex justify-between ml-7">
+    
         <Link
           to="/login"
           className="px-4 py-1 border border-white text-white rounded text-sm font-medium hover:bg-white hover:text-[#093FB4] transition-all duration-150"
@@ -97,7 +97,6 @@ export const Topbar = () => {
         >
           Sign Up
         </Link>
-        </div>
       </div>
     </div>
   );
