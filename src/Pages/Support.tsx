@@ -2,7 +2,7 @@ import { Footer } from "../Components/Footer"
 import { Topbar } from "../Components/Topbar"
 
 
-export const Support = () => {
+export const SupportTicket = () => {
   return (
     <div>
         <Topbar/>

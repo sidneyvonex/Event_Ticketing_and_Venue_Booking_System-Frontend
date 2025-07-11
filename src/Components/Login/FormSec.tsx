@@ -2,23 +2,25 @@
 import { Link } from "react-router";
 import HeroImg from "../../assets/Hero.jpeg"
 import { useState } from "react";
-import { CheckCircle, Eye, EyeOff, XCircle } from "lucide-react";
+import { CheckCircle, Eye, EyeOff, LogIn, XCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { userApi } from "../../Features/api/userApi";
 import {useNavigate} from "react-router-dom"
 import { Toaster,toast } from "sonner";
+import { useDispatch } from "react-redux";
+import type { UserLoginInputs } from "../../types/types";
+import { setCredentials } from "../../Features/auth/authSlice";
 
-interface UserLoginInputs{
-  email:string,
-  password:string
-}
 
 
 
 
 export const FormSec = () => {
-  const [loginUser, { isLoading: dataLoading }] =
-    userApi.useLoginUserMutation<UserLoginInputs>();
+
+  const dispatch =useDispatch();
+
+  const [loginUser, { isLoading:dataLoading}] =
+    userApi.useLoginUserMutation();
 
   const navigate = useNavigate()
 
@@ -28,7 +30,7 @@ export const FormSec = () => {
 
 
     const formSubmit = async (data: UserLoginInputs) => {
-      const loadingToastId = toast.loading("Logging in");
+      const loadingToastId = toast.loading("Logging in ....");
       try {
         const res = await loginUser(data).unwrap();
         console.log("🌟 ~ formSubmit ~ res:", res);
@@ -36,6 +38,7 @@ export const FormSec = () => {
           id: loadingToastId,
           icon: <CheckCircle className="text-green-500 w-5 h-5" />,
         });
+        dispatch(setCredentials(res))
         navigate('/dashboard')
       } catch (error: any) {
         console.log("🌟 Failed to Login:", error);
@@ -122,6 +125,11 @@ export const FormSec = () => {
             </div>
 
             <button className="btn bg-[#093FB4] text-white w-full hover:bg-[#093fb4cb]">
+              {dataLoading ? (
+                <span className="loading loading-spinner"></span>
+              ) : (
+                <LogIn className="w-4 h-4" />
+              )}
               Login
             </button>
           </form>
