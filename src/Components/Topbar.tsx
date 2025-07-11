@@ -1,7 +1,31 @@
-import { Link } from "react-router-dom";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Link,useNavigate } from "react-router-dom";
 import Logo from "../assets/Logo.svg";
+import { useSelector } from "react-redux";
+import type { RootState } from "../Features/app/store";
+import { CalendarDays, Home, LayoutDashboard, LogOut, Mail, Newspaper, Settings } from "lucide-react";
+import { useDispatch } from "react-redux";
+import { clearCredentials } from "../Features/auth/authSlice";
+
 
 export const Topbar = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate()
+
+  const { isAuthenticated, user } = useSelector(
+    (state: RootState) => state.auth
+  );
+  const initials = user?.fullName
+    .split(" ")
+    .map((n:any) => n[0])
+    .join("")
+    .toUpperCase();
+
+    const handleLogout = async()=>{
+      dispatch(clearCredentials())
+      navigate('/login')
+    }
+
   return (
     <div
       className="navbar shadow-md text-white"
@@ -57,47 +81,106 @@ export const Topbar = () => {
             <span style={{ color: "#ED3500" }}>Kenya</span>
           </span>
         </Link>
+
         <div className=" ml-10 hidden lg:flex">
           <ul className="menu menu-horizontal px-1 text-white font-normal gap-4">
             <li className="hover:underline">
-              <Link to="/">Home</Link>
+              <Link to="/">
+                <Home className="w-4 h-4" />
+                Home
+              </Link>
             </li>
             <li className="hover:underline">
-              <Link to="/events">Events</Link>
+              <Link to="/events">
+                <CalendarDays className="w-4 h-4" />
+                Events
+              </Link>
             </li>
             <li className="hover:underline">
-              <Link to="/blogs">Blogs</Link>
+              <Link to="/blogs">
+                <Newspaper className="w-4 h-4" />
+                Blogs
+              </Link>
             </li>
             <li className="hover:underline">
-              <Link to="/contact">Contact Us</Link>
+              <Link to="/contact">
+                <Mail className="w-4 h-4" />
+                Contact Us
+              </Link>
             </li>
           </ul>
         </div>
       </div>
+      {!isAuthenticated ? (
+        <div className="navbar-end space-x-2 mr-2 hidden lg:flex">
+          <Link
+            to="/help"
+            className="bg-gray-100 text-black px-4 py-1 rounded-full text-sm font-medium hover:underline"
+          >
+            Help
+          </Link>
 
-      {/* Right - Action Buttons */}
-      <div className="navbar-end space-x-2 mr-2 hidden lg:flex">
-        <Link
-          to="/help"
-          className="bg-gray-100 text-black px-4 py-1 rounded-full text-sm font-medium hover:underline"
-        >
-          Help
-        </Link>
-    
-        <Link
-          to="/login"
-          className="px-4 py-1 border border-white text-white rounded text-sm font-medium hover:bg-white hover:text-[#093FB4] transition-all duration-150"
-        >
-          Login
-        </Link>
+          <Link
+            to="/login"
+            className="px-4 py-1 border border-white text-white rounded text-sm font-medium hover:bg-white hover:text-[#093FB4] transition-all duration-150"
+          >
+            Login
+          </Link>
 
-        <Link
-          to="/register"
-          className="px-4 py-1 bg-[#ED3500] text-white rounded text-sm font-medium hover:opacity-90 transition-all duration-150"
-        >
-          Sign Up
-        </Link>
-      </div>
+          <Link
+            to="/register"
+            className="px-4 py-1 bg-[#ED3500] text-white rounded text-sm font-medium hover:opacity-90 transition-all duration-150"
+          >
+            Sign Up
+          </Link>
+        </div>
+      ) : (
+        <div className="navbar-end space-x-2 mr-2 hidden lg:flex">
+          <Link
+            to="/help"
+            className="bg-gray-100 text-black px-4 py-1 rounded-full text-sm font-medium hover:underline"
+          >
+            Help
+          </Link>
+          <div className="dropdown dropdown-end ml-5 mr-3">
+            <div
+              tabIndex={0}
+              role="button"
+              className="cursor-pointer flex items-center justify-center w-12 h-12 rounded-full bg-[#ED3500] shadow-md"
+            >
+              <span className="text-white font-semibold text-lg leading-none">
+                {initials}
+              </span>
+            </div>
+
+            <ul
+              tabIndex={0}
+              className="menu menu-sm dropdown-content rounded-box z-50 mt-3 w-52 p-2 shadow-lg bg-white transition-all duration-300 ease-in-out border border-gray-200"
+            >
+              <li>
+                <a className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200">
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </a>
+              </li>
+              <li>
+                <a className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200">
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </a>
+              </li>
+              <li>
+                <button className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200"
+                onClick={handleLogout}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,9 @@
+import { UserLayout } from "../Components/DashboardDesign/UserLayout"
+
 export const UserDashboard = () => {
   return (
-    <div>UserDashboard</div>
+    <div>
+        <UserLayout/>
+    </div>
   )
 }
