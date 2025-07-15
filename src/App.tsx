@@ -10,9 +10,11 @@ import { Help } from './Pages/Help'
 import { Blog } from './Pages/Blog'
 import { UserDashboard } from './Pages/UserDashboard'
 import { Profile } from './Pages/Profile'
-import { Bookings } from './Pages/Bookings'
 import { SupportTicket } from './Pages/Support'
 import  ProtectedRoutes from './Components/Home/ProtectedRoutes'
+import { AllEvents } from './Components/Events/AllEvents'
+import { UserBookings } from './Components/UserDashboard/UserBookings'
+import { Dashboard } from './Components/UserDashboard/Overview/Overview'
 
 function App() {
 const router = createBrowserRouter([
@@ -52,7 +54,7 @@ const router = createBrowserRouter([
     errorElement: <NotFound />,
   },
   {
-    path: "/dashboard",
+    path: "/dashboard/",
     element: (
       <ProtectedRoutes>
         <UserDashboard />
@@ -61,16 +63,28 @@ const router = createBrowserRouter([
     errorElement: <NotFound />,
     children: [
       {
+        index: true, // This makes it the default route for /dashboard/
+        element: <Dashboard />,
+      },
+      {
+        path: "overview",
+        element: <Dashboard />,
+      },
+      {
         path: "profile",
         element: <Profile />,
       },
       {
         path: "bookings",
-        element: <Bookings />,
+        element: <UserBookings />,
+      },
+      {
+        path: "payments",
+        element: <Dashboard />, // You might want to create a dedicated Payments component later
       },
       {
         path: "events",
-        element: <Events />,
+        element: <AllEvents />,
       },
       {
         path: "support",

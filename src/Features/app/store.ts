@@ -10,7 +10,7 @@ const authPersistConfig ={
     key:'auth',
     storage,
     whitelist:[
-        'user','token','userRole','isAuthenticated'
+        'user','token','userRole','isAuthenticated','profileUrl'
     ] // Specifys parts of state that need to be persisted
 }
 
