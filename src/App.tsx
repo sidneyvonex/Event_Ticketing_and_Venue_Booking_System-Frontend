@@ -63,12 +63,8 @@ const router = createBrowserRouter([
     errorElement: <NotFound />,
     children: [
       {
-        index: true, // This makes it the default route for /dashboard/
-        element: <Dashboard />,
-      },
-      {
-        path: "overview",
-        element: <Dashboard />,
+        index: true, // 
+        element: <Dashboard />, // 👈 This is the component rendered by default
       },
       {
         path: "profile",
@@ -78,10 +74,10 @@ const router = createBrowserRouter([
         path: "bookings",
         element: <UserBookings />,
       },
-      {
-        path: "payments",
-        element: <Dashboard />, // You might want to create a dedicated Payments component later
-      },
+      // {
+      //   path: "payments",
+      //   element: < />,
+      // },
       {
         path: "events",
         element: <AllEvents />,

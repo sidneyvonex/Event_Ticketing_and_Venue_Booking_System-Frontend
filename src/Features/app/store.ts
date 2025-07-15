@@ -5,6 +5,7 @@ import { userApi } from "../api/userApi";
 import { persistStore,persistReducer } from "redux-persist";
 import storage from 'redux-persist/lib/storage' // defaults to web Local Sorage
 import authReducer from "../auth/authSlice"
+import { eventApi } from "../api/EventApi";
 
 const authPersistConfig ={
     key:'auth',
@@ -20,6 +21,7 @@ const persistedAuthReducer = persistReducer(authPersistConfig,authReducer)
 export const store = configureStore({
     reducer:{
         [userApi.reducerPath]:userApi.reducer,
+        [eventApi.reducerPath]:eventApi.reducer,
 
         //Persist reducer
 
@@ -28,7 +30,7 @@ export const store = configureStore({
     middleware:(getDefaultMiddleware)=>
         getDefaultMiddleware({
             serializableCheck:false,
-        }).concat(userApi.middleware)
+        }).concat(userApi.middleware,eventApi.middleware)
 })
 
 //Export Persist Store

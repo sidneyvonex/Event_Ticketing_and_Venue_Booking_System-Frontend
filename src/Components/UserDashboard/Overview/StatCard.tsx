@@ -11,7 +11,7 @@ export const StatCard = ({
 }) => {
   const colorClasses = {
     blue: "bg-blue-50 border-blue-200 text-blue-600",
-    green: "bg-green-50 border-green-200 text-green-600", 
+    green: "bg-green-50 border-green-200 text-green-600",
     purple: "bg-purple-50 border-purple-200 text-purple-600",
     orange: "bg-orange-50 border-orange-200 text-orange-600",
   };
@@ -24,7 +24,9 @@ export const StatCard = ({
           <p className="text-3xl font-bold text-gray-800 mt-2">{value}</p>
         </div>
         {icon && (
-          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
+          <div
+            className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]}`}
+          >
             <span className="text-xl">{icon}</span>
           </div>
         )}

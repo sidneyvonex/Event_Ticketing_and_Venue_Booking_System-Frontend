@@ -17,3 +17,26 @@ export interface UserLoginInputs{
  export  type ProtectedRouteProps={
     children:ReactNode
   }
+
+   export interface EventsDataTypes{
+    category:string,
+    description:string,
+    createdAt:string,
+    eventId:number,
+    eventImageUrl:string,
+    eventDate:string,
+    eventTime:string,
+    eventTitle:string,
+    ticketPrice:string,
+    ticketsSold:number,
+    updatedAt:string,
+    venue:{
+      venueName:string
+      venueId:number,
+      venueAddress:string,
+      venueCapacity:number
+    }
+  
+  }
+
+  

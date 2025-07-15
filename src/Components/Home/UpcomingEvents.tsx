@@ -1,114 +1,108 @@
-import { Link } from "react-router";
-
+import { Link } from "react-router-dom";
+import { eventApi } from "../../Features/api/EventApi";
+import type { EventsDataTypes } from "../../types/types";
+import { PuffLoader } from "react-spinners";
 
 export const UpcomingEvents = () => {
+  const {
+    data: eventsData = [],
+    isLoading,
+    error,
+  } = eventApi.useGetAllEventsQuery({});
+
+  const formatDateTime = (eventDate: string, eventTime: string) => {
+    const datePart = new Date(eventDate).toISOString().split("T")[0];
+    const combined = new Date(`${datePart}T${eventTime}`);
+    return combined.toLocaleString("en-US", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   return (
-    <>
-      <div className="">
-        <div className="flex mb-0 ">
-          <div className="navbar-start mx-10 my-5">
-            <h1 className="font-bold">Upcoming Events</h1>
-          </div>
-          <div className="navbar-end mx-0">
-            <Link to="/events" className="font-bold underline">
-              More
-            </Link>
-          </div>
-        </div>
-        <div className="grid grid-cols-4 gap-5">
-          <div className="card bg-base-100 w-80  rounded-2xl shadow-sm mb-5 ml-5 mt-5 hover:scale-103 transition duration-300">
-            <figure className="pt-3 pl-2 pr-2">
-              <img
-                src="https://madfun.s3.af-south-1.amazonaws.com/What_it_Takes_-_Comrades_Edition_776.jpeg"
-                alt="Event Picture Poster"
-                className="rounded-t-xl"
-              />
-            </figure>
-            <div className="card-body">
-              <h2 className="card-title">What It takes- Comrades Edition</h2>
-              <p className="text-red-800">Wed 16 July, 2025 2:00 PM</p>
-              <p className="text-gray-600">Kenya National Theatre</p>
-              <div className="card-actions">
-                <Link
-                  to="/tickets"
-                  className="btn btn-primary bg-[#093FB4] border-none rounded-lg text-white hover:bg-[#093fb4af]"
-                >
-                  Buy Ticket
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 w-80  rounded-2xl shadow-sm mb-5 ml-5 mt-5 hover:scale-103 transition duration-300">
-            <figure className="pt-3 pl-2 pr-2">
-              <img
-                src="https://madfun.s3.af-south-1.amazonaws.com/What_it_Takes_-_Comrades_Edition_776.jpeg"
-                alt="Event Picture Poster"
-                className="rounded-t-xl"
-              />
-            </figure>
-            <div className="card-body">
-              <h2 className="card-title">What It takes- Comrades Edition</h2>
-              <p className="text-red-800">Wed 16 July, 2025 2:00 PM</p>
-              <p className="text-gray-600">Kenya National Theatre</p>
-              <div className="card-actions">
-                <Link
-                  to="/tickets"
-                  className="btn btn-primary bg-[#093FB4] border-none rounded-lg text-white hover:bg-[#093fb4af]"
-                >
-                  Buy Ticket
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 w-80  rounded-2xl shadow-sm mb-5 ml-5 mt-5 hover:scale-103 transition duration-300">
-            <figure className="pt-3 pl-2 pr-2">
-              <img
-                src="https://madfun.s3.af-south-1.amazonaws.com/What_it_Takes_-_Comrades_Edition_776.jpeg"
-                alt="Event Picture Poster"
-                className="rounded-t-xl"
-              />
-            </figure>
-            <div className="card-body">
-              <h2 className="card-title">What It takes- Comrades Edition</h2>
-              <p className="text-red-800">Wed 16 July, 2025 2:00 PM</p>
-              <p className="text-gray-600">Kenya National Theatre</p>
-              <div className="card-actions">
-                <Link
-                  to="/tickets"
-                  className="btn btn-primary bg-[#093FB4] border-none rounded-lg text-white hover:bg-[#093fb4af]"
-                >
-                  Buy Ticket
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 w-80  rounded-2xl shadow-sm mb-5 ml-5 mt-5 hover:scale-103 transition duration-300">
-            <figure className="pt-3 pl-2 pr-2">
-              <img
-                src="https://madfun.s3.af-south-1.amazonaws.com/What_it_Takes_-_Comrades_Edition_776.jpeg"
-                alt="Event Picture Poster"
-                className="rounded-t-xl"
-              />
-            </figure>
-            <div className="card-body">
-              <h2 className="card-title">What It takes- Comrades Edition</h2>
-              <p className="text-red-800">Wed 16 July, 2025 2:00 PM</p>
-              <p className="text-gray-600">Kenya National Theatre</p>
-              <div className="card-actions">
-                <Link
-                  to="/tickets"
-                  className="btn btn-primary bg-[#093FB4] border-none rounded-lg text-white hover:bg-[#093fb4af]"
-                >
-                  Buy Ticket
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="px-4 md:px-8 py-6">
+      {/* Header Section */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-base-content  border-primary pl-4">
+          Upcoming Events
+        </h1>
+        <Link to="/events" className="text-primary underline font-semibold">
+          More
+        </Link>
       </div>
-    </>
+
+      {/* States: error/loading/empty/data */}
+      {error ? (
+        <div className="flex items-center justify-center h-48">
+          <p className="text-red-500">Something Went Wrong</p>
+        </div>
+      ) : isLoading ? (
+        <div className="flex justify-center items-center h-48">
+          <PuffLoader size={60} color="#0f172a" />
+        </div>
+      ) : eventsData?.length === 0 ? (
+        <div className="flex items-center justify-center h-48">
+          <p className="text-3xl text-red-500">Oops! - No Events Found</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {eventsData.slice(0, 4).map((event: EventsDataTypes) => (
+            <Link
+              to={`/tickets/${event.eventId}`}
+              key={event.eventId}
+              className="block group  transition duration-300 transform hover:scale-[1.02]  hover:shadow-lg"
+            >
+              <div className="card w-full bg-base-100 rounded-2xl shadow-sm group-hover:shadow-lg transition duration-300 h-full cursor-pointer">
+                <figure className="p-3">
+                  <img
+                    src={event.eventImageUrl}
+                    alt={event.eventTitle}
+                    className="rounded-xl object-cover w-full h-48"
+                  />
+                </figure>
+                <div className="card-body space-y-2">
+                  <h2 className="card-title text-lg">{event.eventTitle}</h2>
+                  <p className="text-sm">
+                    <span className="font-semibold text-base-content"></span>{" "}
+                    <span className="text-red-800">
+                      {formatDateTime(event.eventDate, event.eventTime)}
+                    </span>
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold text-base-content">
+                      Venue:
+                    </span>{" "}
+                    <span className="text-gray-600">
+                      {event.venue.venueName}
+                    </span>
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold text-base-content">
+                      Price:
+                    </span>{" "}
+                    <span className="text-gray-700">
+                      Ksh {event.ticketPrice}
+                    </span>
+                  </p>
+                  <div className="pt-2">
+                    <button
+                      className="btn btn-sm btn-primary bg-[#093FB4] border-none rounded-lg text-white group-hover:bg-[#093fb4c8] cursor-pointer"
+                      type="button"
+                    >
+                      Buy Ticket
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   );
-}
+};

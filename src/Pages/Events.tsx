@@ -6,7 +6,7 @@ export const Events = () => {
   return (
     <>
       <Topbar />
-      <div className="bg-[#FFD8D8]">
+      <div className="pb-10">
         <AllEvents />
       </div>
       <Footer />
