@@ -10,11 +10,11 @@ import { Help } from './Pages/Help'
 import { Blog } from './Pages/Blog'
 import { UserDashboard } from './Pages/UserDashboard'
 import { Profile } from './Pages/Profile'
-import { SupportTicket } from './Pages/Support'
+import { UserSupport } from './Components/UserDashboard/UserSupport'
 import  ProtectedRoutes from './Components/Home/ProtectedRoutes'
 import { AllEvents } from './Components/Events/AllEvents'
 import { UserBookings } from './Components/UserDashboard/UserBookings'
-import { Dashboard } from './Components/UserDashboard/Overview/Overview'
+import { UserDashboardOverview } from "./Components/UserDashboard/UserDashboardOverview";
 import { UserPaymentsPage } from './Components/UserDashboard/UserPaymentsPage'
 
 function App() {
@@ -65,7 +65,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true, //
-        element: <Dashboard />, //Default Dashboard Panel
+        element: <UserDashboardOverview />, //Default Dashboard Panel
       },
       {
         path: "profile",
@@ -77,7 +77,7 @@ const router = createBrowserRouter([
       },
       {
         path: "payments",
-        element: <UserPaymentsPage/>,
+        element: <UserPaymentsPage />,
       },
       {
         path: "events",
@@ -85,7 +85,7 @@ const router = createBrowserRouter([
       },
       {
         path: "support",
-        element: <SupportTicket />,
+        element: <UserSupport />,
       },
     ],
   },
