@@ -6,38 +6,13 @@ import type { BookingsDataTypes } from "../../types/types";
 import { PuffLoader } from "react-spinners";
 import { Link } from "react-router";
 import { MdSearch } from "react-icons/md";
-import QRCode from "qrcode";
 
 // PDF generation function for ticket
 const generateTicketPDF = async (booking: BookingsDataTypes) => {
   const printWindow = window.open("", "_blank");
   if (!printWindow) return;
 
-  // Generate QR code data - this will contain all essential ticket info
-  const qrData = JSON.stringify({
-    ticketId: booking.bookingId,
-    eventTitle: booking.event.eventTitle,
-    eventDate: booking.event.eventDate,
-    eventTime: booking.event.eventTime,
-    venue: booking.event.venue.venueName,
-    quantity: booking.quantity,
-    status: booking.bookingStatus,
-    verificationCode: `TK${booking.bookingId}${Date.now()
-      .toString(36)
-      .toUpperCase()}`,
-  });
-
   try {
-    // Generate QR code as base64 data URL
-    const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
-      width: 200,
-      margin: 2,
-      color: {
-        dark: "#000000",
-        light: "#FFFFFF",
-      },
-    });
-
     const pdfContent = `
       <!DOCTYPE html>
       <html>
@@ -111,9 +86,6 @@ const generateTicketPDF = async (booking: BookingsDataTypes) => {
             border: 2px dashed #6366f1;
             border-radius: 8px;
           }
-          .qr-code {
-            margin: 10px 0;
-          }
           .footer { 
             margin-top: 25px; 
             text-align: center; 
@@ -182,12 +154,10 @@ const generateTicketPDF = async (booking: BookingsDataTypes) => {
         </div>
 
         <div class="qr-section">
-          <p style="margin: 0 0 10px 0; font-weight: 600;">Present this QR code at the venue</p>
-          <div class="qr-code">
-            <img src="${qrCodeDataUrl}" alt="QR Code" style="border: 1px solid #e5e7eb; border-radius: 4px;" />
-          </div>
+          <p style="margin: 0 0 10px 0; font-weight: 600;">Present this ticket at the venue</p>
+          <div style="font-size: 48px; margin: 10px 0;">🎫</div>
           <p style="margin: 10px 0 0 0; font-size: 12px;">
-            Scan QR code or show booking ID: #${booking.bookingId}
+            Show booking ID: #${booking.bookingId}
           </p>
         </div>
 
@@ -216,9 +186,8 @@ const generateTicketPDF = async (booking: BookingsDataTypes) => {
     printWindow.document.write(pdfContent);
     printWindow.document.close();
   } catch (error) {
-    console.error("Error generating QR code:", error);
-    // Fallback to original PDF without QR code
-    alert("Failed to generate QR code. Printing ticket without QR code.");
+    console.error("Error generating ticket:", error);
+    alert("Failed to generate ticket. Please try again.");
   }
 };
 
@@ -246,9 +215,9 @@ export const UserBookings = () => {
   };
 
   // Action handlers
-  const handleViewTicket = async (booking: BookingsDataTypes) => {
+  const handleViewTicket = (booking: BookingsDataTypes) => {
     console.log("Viewing ticket for booking:", booking.bookingId);
-    await generateTicketPDF(booking);
+    generateTicketPDF(booking);
   };
 
   const handleCancelBooking = (bookingId: number, bookingStatus: string) => {
