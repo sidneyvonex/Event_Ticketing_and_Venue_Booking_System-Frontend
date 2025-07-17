@@ -15,6 +15,7 @@ import  ProtectedRoutes from './Components/Home/ProtectedRoutes'
 import { AllEvents } from './Components/Events/AllEvents'
 import { UserBookings } from './Components/UserDashboard/UserBookings'
 import { Dashboard } from './Components/UserDashboard/Overview/Overview'
+import { UserPaymentsPage } from './Components/UserDashboard/UserPaymentsPage'
 
 function App() {
 const router = createBrowserRouter([
@@ -63,8 +64,8 @@ const router = createBrowserRouter([
     errorElement: <NotFound />,
     children: [
       {
-        index: true, // 
-        element: <Dashboard />, // 👈 This is the component rendered by default
+        index: true, //
+        element: <Dashboard />, //Default Dashboard Panel
       },
       {
         path: "profile",
@@ -74,10 +75,10 @@ const router = createBrowserRouter([
         path: "bookings",
         element: <UserBookings />,
       },
-      // {
-      //   path: "payments",
-      //   element: < />,
-      // },
+      {
+        path: "payments",
+        element: <UserPaymentsPage/>,
+      },
       {
         path: "events",
         element: <AllEvents />,

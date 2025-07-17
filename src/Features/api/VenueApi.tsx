@@ -1,15 +1,15 @@
-import {createApi,fetchBaseQuery} from "@reduxjs/toolkit/query/react"
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "../app/store";
-
 
 export const venueApi = createApi({
   reducerPath: "venueApi",
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:3000/api",
     prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token;
+      const state = getState() as RootState;
+      const token = state.auth?.token;
       if (token) {
-        headers.set("Authorization", `${token}`);
+        headers.set("Authorization", `Bearer ${token}`);
       }
       headers.set("Content-Type", "application/json");
       return headers;
@@ -27,25 +27,32 @@ export const venueApi = createApi({
       }),
       invalidatesTags: ["venues"],
     }),
-    getAllVenues:builder.query({
-        query:() => 'venues',
-        providesTags:['venues']
+    getAllVenues: builder.query({
+      query: () => "venues",
+      providesTags: ["venues"],
     }),
-    updateVenue:builder.mutation({
-        query:({venueId,...venueDataPayload}) =>({
-            url:`venues/${venueId}`,
-            method:'PUT',
-            body:venueDataPayload
-        }),
-        invalidatesTags:['venues']
+    updateVenue: builder.mutation({
+      query: ({ venueId, ...venueDataPayload }) => ({
+        url: `venues/${venueId}`,
+        method: "PUT",
+        body: venueDataPayload,
+      }),
+      invalidatesTags: ["venues"],
     }),
-    deleteVenue:builder.mutation({
-        query:(venueId)=>({
-            url:`venues/${venueId}`,
-            method:'DELETE',
-        }),
-        invalidatesTags:['venues']
-    })
-
+    deleteVenue: builder.mutation({
+      query: (venueId) => ({
+        url: `venues/${venueId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["venues"],
+    }),
   }),
 });
+
+// Export hooks for usage in functional components
+export const {
+  useCreateVenueMutation,
+  useGetAllVenuesQuery,
+  useUpdateVenueMutation,
+  useDeleteVenueMutation,
+} = venueApi;

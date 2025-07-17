@@ -1,13 +1,13 @@
 import { createApi,fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "../app/store";
 
-export const bookApi = createApi({
-    reducerPath:'bookApi',
+export const bookingsApi = createApi({
+    reducerPath:'bookingsApi',
     baseQuery: fetchBaseQuery({baseUrl:'http://localhost:3000/api',
         prepareHeaders: (headers, { getState }) => {
             const token = (getState() as RootState).auth.token;
             if (token) {
-              headers.set('Authorization', `${token}`);
+              headers.set('Authorization', `Bearer ${token}`);
             }
             headers.set('Content-Type', 'application/json');
             return headers;
@@ -51,3 +51,12 @@ export const bookApi = createApi({
         })
     })
 })
+
+// Export hooks for usage in functional components
+export const { 
+    useGetAllBooksQuery,
+    useCreateBookMutation,
+    useGetAllBookingsForUserIdQuery,
+    useUpdateBookingsMutation,
+    useDeleteBookingsMutation
+} = bookingsApi;

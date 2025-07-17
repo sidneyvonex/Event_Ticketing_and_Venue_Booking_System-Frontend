@@ -1,10 +1,9 @@
-import {Link} from "react-router-dom"
+import { Link } from "react-router-dom";
 import { eventApi } from "../../Features/api/EventApi";
 import type { EventsDataTypes } from "../../types/types";
 import { PuffLoader } from "react-spinners";
 
 export const AllEvents = () => {
-
   //To Covert Date to weekday,day,month, year  and date(12hour format)
   const formatDateTime = (eventDate: string, eventTime: string) => {
     const datePart = new Date(eventDate).toISOString().split("T")[0];
@@ -20,7 +19,11 @@ export const AllEvents = () => {
     });
   };
 
-  const {data:eventsData,isLoading,error} = eventApi.useGetAllEventsQuery({})
+  const {
+    data: eventsData,
+    isLoading,
+    error,
+  } = eventApi.useGetAllEventsQuery({});
 
   return (
     <div>
@@ -28,17 +31,20 @@ export const AllEvents = () => {
         <div className="join">
           <div>
             <div>
-              <input className="input join-item border-1 rounded-md px-15" placeholder="Search" />
+              <input
+                className="input join-item  rounded-md px-15"
+                placeholder="Search"
+              />
             </div>
           </div>
-          <select className="select join-item">
-            <option disabled selected>
+          <select className="select join-item" defaultValue="">
+            <option disabled value="">
               Filter
             </option>
-            <option>Music</option>
-            <option>Sport</option>
-            <option>Fashion</option>
-            <option>Art & Design</option>
+            <option value="music">Music</option>
+            <option value="sport">Sport</option>
+            <option value="fashion">Fashion</option>
+            <option value="art-design">Art & Design</option>
           </select>
           <div className="indicator">
             <button className="btn join-item">Search</button>
@@ -114,4 +120,4 @@ export const AllEvents = () => {
       )}
     </div>
   );
-}
+};

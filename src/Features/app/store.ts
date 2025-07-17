@@ -6,6 +6,10 @@ import { persistStore,persistReducer } from "redux-persist";
 import storage from 'redux-persist/lib/storage' // defaults to web Local Sorage
 import authReducer from "../auth/authSlice"
 import { eventApi } from "../api/EventApi";
+import { bookingsApi } from "../api/BookingsApi";
+import { supportTicketApi } from "../api/SupportTicketApi";
+import { venueApi } from "../api/VenueApi";
+import { paymentsApi } from "../api/PaymentsApi";
 
 const authPersistConfig ={
     key:'auth',
@@ -22,6 +26,10 @@ export const store = configureStore({
     reducer:{
         [userApi.reducerPath]:userApi.reducer,
         [eventApi.reducerPath]:eventApi.reducer,
+        [bookingsApi.reducerPath]:bookingsApi.reducer,
+        [supportTicketApi.reducerPath]:supportTicketApi.reducer,
+        [venueApi.reducerPath]:venueApi.reducer,
+        [paymentsApi.reducerPath]:paymentsApi.reducer,
 
         //Persist reducer
 
@@ -30,7 +38,7 @@ export const store = configureStore({
     middleware:(getDefaultMiddleware)=>
         getDefaultMiddleware({
             serializableCheck:false,
-        }).concat(userApi.middleware,eventApi.middleware)
+        }).concat(userApi.middleware,eventApi.middleware,bookingsApi.middleware,venueApi.middleware,supportTicketApi.middleware,paymentsApi.middleware)
 })
 
 //Export Persist Store

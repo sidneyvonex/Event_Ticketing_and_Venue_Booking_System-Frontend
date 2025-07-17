@@ -50,14 +50,14 @@ export const Topbar = ({ toggleSidebar, toggleMobileSidebar }: TopbarProps) => {
           <div
             tabIndex={0}
             role="button"
-            className="btn btn-ghost btn-circle avatar border-0"
+            className="btn btn-ghost btn-circle avatar border-0  bg-[#ED3500] "
           >
             {profileImage ? (
               <div className="w-10 rounded-full overflow-hidden hover:outline-1 hover:outline-offset-2 hover:outline-solid">
                 <img src={profileImage} alt="Profile Image" />
               </div>
             ) : (
-              <span className="text-white font-semibold text-lg   leading-none">
+              <span className="text-white font-semibold text-lg leading-none">
                 {initials}
               </span>
             )}
