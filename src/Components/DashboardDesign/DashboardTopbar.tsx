@@ -1,6 +1,6 @@
 import { Bell, LayoutDashboard, LogOut, Menu, Settings } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
-import {  useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { RootState } from "../../Features/app/store";
 import { clearCredentials } from "../../Features/auth/authSlice";
 
@@ -11,7 +11,7 @@ interface TopbarProps {
 
 export const Topbar = ({ toggleSidebar, toggleMobileSidebar }: TopbarProps) => {
   const dispatch = useDispatch();
-   const navigate = useNavigate()
+  const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
 
   const initials = user?.fullName
@@ -22,13 +22,13 @@ export const Topbar = ({ toggleSidebar, toggleMobileSidebar }: TopbarProps) => {
 
   const profileImage = user?.profileUrl;
 
-    const handleLogout = async()=>{
-      dispatch(clearCredentials())
-      navigate('/login')
-    }
+  const handleLogout = async () => {
+    dispatch(clearCredentials());
+    navigate("/login");
+  };
 
   return (
-    <header className="w-full bg-white px-6 py-4 flex items-center justify-between border-b border-gray-200 shadow-sm z-10">
+    <header className="w-full bg-white px-6 py-4 flex items-center justify-between border-b border-gray-200 shadow-sm z-10 sticky top-0">
       {/* Left: Hamburger + Page Title */}
       <div className="flex items-center gap-4">
         <button onClick={toggleSidebar} className="hidden lg:block">
@@ -68,16 +68,22 @@ export const Topbar = ({ toggleSidebar, toggleMobileSidebar }: TopbarProps) => {
             className="menu menu-sm dropdown-content rounded-box z-50 mt-3 w-52 p-2 shadow-lg bg-white transition-all duration-300 ease-in-out border border-gray-200"
           >
             <li>
-              <a className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200">
+              <Link
+                to={user?.role === "admin" ? "/admindashboard" : "/dashboard"}
+                className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200"
+              >
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard
-              </a>
+              </Link>
             </li>
             <li>
-              <a className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200">
+              <Link
+                to="profile"
+                className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200"
+              >
                 <Settings className="w-4 h-4" />
-                Settings
-              </a>
+                Profile
+              </Link>
             </li>
             <li>
               <button

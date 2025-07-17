@@ -38,6 +38,10 @@ export const supportTicketApi = createApi({
             query:() => 'tickets',
             providesTags:['supportTickets']
         }),
+        getSupportTicketsByUserId:builder.query({
+            query:(userId) => `tickets/user?userId=${userId}`,
+            providesTags:['supportTickets']
+        }),
         deleteSupportTicket:builder.mutation({
             query:(ticketId)=>({
                 url:`tickets/${ticketId}`,

@@ -9,7 +9,7 @@ import { Contact } from './Pages/Contact'
 import { Help } from './Pages/Help'
 import { Blog } from './Pages/Blog'
 import { UserDashboard } from './Pages/UserDashboard'
-import { Profile } from './Pages/Profile'
+import { UserProfile } from "./Components/UserDashboard/UserProfile";
 import { UserSupport } from './Components/UserDashboard/UserSupport'
 import  ProtectedRoutes from './Components/Home/ProtectedRoutes'
 import { AllEvents } from './Components/Events/AllEvents'
@@ -69,7 +69,7 @@ const router = createBrowserRouter([
       },
       {
         path: "profile",
-        element: <Profile />,
+        element: <UserProfile />,
       },
       {
         path: "bookings",

@@ -1,34 +1,41 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Link,useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Logo from "../assets/Logo.svg";
 import { useSelector } from "react-redux";
 import type { RootState } from "../Features/app/store";
-import { CalendarDays, Home, LayoutDashboard, LogOut, Mail, Newspaper, Settings } from "lucide-react";
+import {
+  CalendarDays,
+  Home,
+  LayoutDashboard,
+  LogOut,
+  Mail,
+  Newspaper,
+  Settings,
+} from "lucide-react";
 import { useDispatch } from "react-redux";
 import { clearCredentials } from "../Features/auth/authSlice";
 
-
 export const Topbar = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const { isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
   );
   const initials = user?.fullName
     .split(" ")
-    .map((n:any) => n[0])
+    .map((n: any) => n[0])
     .join("")
     .toUpperCase();
 
-    const handleLogout = async()=>{
-      dispatch(clearCredentials())
-      navigate('/login')
-    }
+  const handleLogout = async () => {
+    dispatch(clearCredentials());
+    navigate("/login");
+  };
 
   return (
     <div
-      className="navbar shadow-md text-white"
+      className="navbar shadow-md text-white sticky top-0 z-50"
       style={{ backgroundColor: "#093FB4" }}
     >
       <div className="navbar-start">
@@ -158,20 +165,27 @@ export const Topbar = () => {
               className="menu menu-sm dropdown-content rounded-box z-50 mt-3 w-52 p-2 shadow-lg bg-white transition-all duration-300 ease-in-out border border-gray-200"
             >
               <li>
-                <a className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200">
+                <Link
+                  to={user?.role === "admin" ? "/admindashboard" : "/dashboard"}
+                  className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200"
+                >
                   <LayoutDashboard className="w-4 h-4" />
                   Dashboard
-                </a>
+                </Link>
               </li>
               <li>
-                <a className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200">
+                <Link
+                  to="/profile"
+                  className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200"
+                >
                   <Settings className="w-4 h-4" />
-                  Settings
-                </a>
+                  Profile
+                </Link>
               </li>
               <li>
-                <button className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200"
-                onClick={handleLogout}
+                <button
+                  className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200"
+                  onClick={handleLogout}
                 >
                   <LogOut className="w-4 h-4" />
                   Logout

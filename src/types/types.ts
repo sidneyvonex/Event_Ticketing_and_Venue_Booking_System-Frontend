@@ -93,4 +93,20 @@ export interface UserLoginInputs{
   },
  }
 
+ export interface SupportTicketDataTypes{
+  ticketId:number,
+  userId:number,
+  subject:string,
+  description:string,
+  category:string,
+  supportTicketStatus:string,
+  createdAt:string,
+  updatedAt:string,
+  user:{
+    firstName:string,
+    lastName:string,
+    email:string,
+  }
+ }
+
   
