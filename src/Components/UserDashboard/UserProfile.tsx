@@ -2,108 +2,103 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../Features/app/store";
-import { 
-  MdEdit, 
-  MdSave, 
-  MdCancel, 
-  MdCamera, 
-  MdEmail, 
-  MdPhone, 
-  MdLocationOn, 
+import type { UserDataTypes } from "../../types/types";
+import {
+  MdEdit,
+  MdSave,
+  MdCancel,
+  MdCamera,
+  MdEmail,
+  MdPhone,
+  MdLocationOn,
   MdPerson,
   MdSecurity,
   MdNotifications,
   MdVisibility,
-  MdVisibilityOff
+  MdVisibilityOff,
 } from "react-icons/md";
 import { toast } from "sonner";
 
-interface UserData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  address: string;
-  profileImage: string;
-}
-
 export const UserProfile = () => {
   const { user } = useSelector((state: RootState) => state.auth);
-  
+
   // Initialize user data from Redux store or defaults
-  const [userData, setUserData] = useState<UserData>({
+  const [userData, setUserData] = useState<UserDataTypes>({
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
+    phoneNumber: "",
     address: "",
-    profileImage: ""
+    profilePicture: "",
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState<UserData>(userData);
+  const [editedData, setEditedData] = useState<UserDataTypes>(userData);
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
-    confirmPassword: ""
+    confirmPassword: "",
   });
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
-    confirm: false
+    confirm: false,
   });
-
-  // Debug: Log user data on mount
-  useEffect(() => {
-    console.log('Current user from Redux:', user);
-    if (user) {
-      console.log('User properties:', Object.keys(user));
-    }
-  }, []);
 
   // Load user data from Redux store on component mount
   useEffect(() => {
     if (user) {
-      console.log('User data from Redux:', user); // Debug log
-      
-      const firstName = user.fullName?.split(" ")[0] || "";
-      const lastName = user.fullName?.split(" ").slice(1).join(" ") || "";
-      
-      const initialData: UserData = {
+      console.log("User data from Redux:", user); // Debug log
+
+      // Handle different user object structures
+      const userObject = user.user || user;
+
+      // Always extract firstName and lastName from fullName since they are combined in Redux
+      let firstName = "";
+      let lastName = "";
+
+      if (userObject?.fullName) {
+        const nameParts = userObject.fullName.trim().split(" ");
+        firstName = nameParts[0] || "";
+        lastName = nameParts.slice(1).join(" ") || ""; // Join remaining parts as lastName
+      }
+
+      const initialData: UserDataTypes = {
         firstName,
         lastName,
-        email: user.email || "",
-        // Try different possible property names for phone
-        phone: user.phone || user.phoneNumber || user.contactNumber || "",
-        // Try different possible property names for address
-        address: user.address || user.location || user.street || "",
-        profileImage: user.profileUrl || user.profileImage || user.avatar || ""
+        email: userObject?.email || "",
+        phoneNumber: userObject?.phoneNumber || userObject?.contactPhone || "",
+        address: userObject?.address || "",
+        profilePicture:
+          userObject?.profilePicture || userObject?.profileUrl || "",
       };
-      
-      console.log('Mapped user data:', initialData); // Debug log
-      
+
+      console.log("Mapped user data:", initialData);
+
       setUserData(initialData);
       setEditedData(initialData);
     }
   }, [user]);
 
   // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setEditedData(prev => ({
+    setEditedData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value || "", // Ensure value is never undefined
     }));
   };
 
   // Handle password input changes
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setPasswordData(prev => ({
+    setPasswordData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -114,9 +109,9 @@ export const UserProfile = () => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
-        setEditedData(prev => ({
+        setEditedData((prev) => ({
           ...prev,
-          profileImage: imageUrl
+          profilePicture: imageUrl,
         }));
       };
       reader.readAsDataURL(file);
@@ -137,39 +132,52 @@ export const UserProfile = () => {
       const updateData = {
         firstName: editedData.firstName.trim(),
         lastName: editedData.lastName.trim(),
-        phone: editedData.phone.trim(),
+        phoneNumber: editedData.phoneNumber.trim(),
         address: editedData.address.trim(),
-        fullName: `${editedData.firstName.trim()} ${editedData.lastName.trim()}`.trim()
+        fullName:
+          `${editedData.firstName.trim()} ${editedData.lastName.trim()}`.trim(),
       };
 
-      // TODO: Replace with your actual API endpoint
-      const response = await fetch(`/api/users/${user?.userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // Adjust based on your auth setup
-        },
-        body: JSON.stringify(updateData)
-      });
+      // Get user ID more safely
+      const userId = user?.user?.userId || user?.userId;
 
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
+      if (!userId) {
+        toast.error("User ID not found. Please log in again.");
+        return;
       }
 
-      const updatedUser = await response.json();
-      
+      // TODO: Replace with your actual API endpoint
+      const response = await fetch(
+        `http://localhost:3000/api/users/${userId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${localStorage.getItem("token")}`, // Adjust based on your auth setup
+          },
+          body: JSON.stringify(updateData),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update profile");
+      }
+
+      await response.json(); // Consume the response
+
       // Update local state
       setUserData(editedData);
       setIsEditing(false);
-      
+
       toast.success("Profile updated successfully!");
-      
+
       // TODO: Update Redux store with new user data
       // dispatch(updateUserProfile(updatedUser));
-      
     } catch (error: any) {
-      console.error('Error updating profile:', error);
-      toast.error(error.message || "Failed to update profile. Please try again.");
+      console.error("Error updating profile:", error);
+      toast.error(
+        error.message || "Failed to update profile. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -184,12 +192,12 @@ export const UserProfile = () => {
   // Handle password change
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error("New passwords don't match!");
       return;
     }
-    
+
     if (passwordData.newPassword.length < 6) {
       toast.error("Password must be at least 6 characters long!");
       return;
@@ -197,22 +205,33 @@ export const UserProfile = () => {
 
     setIsLoading(true);
     try {
+      // Get user ID more safely
+      const userId = user?.user?.userId || user?.userId;
+
+      if (!userId) {
+        toast.error("User ID not found. Please log in again.");
+        return;
+      }
+
       // TODO: Replace with your actual API endpoint
-      const response = await fetch(`/api/users/${user?.userId}/change-password`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword
-        })
-      });
+      const response = await fetch(
+        `http://localhost:3000/api/users/${userId}/change-password`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            currentPassword: passwordData.currentPassword,
+            newPassword: passwordData.newPassword,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to change password');
+        throw new Error(errorData.message || "Failed to change password");
       }
 
       toast.success("Password changed successfully!");
@@ -220,11 +239,13 @@ export const UserProfile = () => {
       setPasswordData({
         currentPassword: "",
         newPassword: "",
-        confirmPassword: ""
+        confirmPassword: "",
       });
     } catch (error: any) {
-      console.error('Error changing password:', error);
-      toast.error(error.message || "Failed to change password. Please try again.");
+      console.error("Error changing password:", error);
+      toast.error(
+        error.message || "Failed to change password. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -232,12 +253,16 @@ export const UserProfile = () => {
 
   // Get user initials for avatar
   const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    if (!firstName && !lastName) return "U";
+    return `${firstName?.charAt(0) || ""}${
+      lastName?.charAt(0) || ""
+    }`.toUpperCase();
   };
 
   // Get full name for display
   const getFullName = (firstName: string, lastName: string) => {
-    return `${firstName} ${lastName}`.trim();
+    if (!firstName && !lastName) return "User";
+    return `${firstName || ""} ${lastName || ""}`.trim();
   };
 
   return (
@@ -245,10 +270,14 @@ export const UserProfile = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-base-content">My Profile</h2>
-          <p className="text-base-content/70 mt-1">Manage your account settings and preferences</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-base-content">
+            My Profile
+          </h2>
+          <p className="text-base-content/70 mt-1">
+            Manage your account settings and preferences
+          </p>
         </div>
-        
+
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
@@ -295,9 +324,17 @@ export const UserProfile = () => {
               {/* Profile Image */}
               <div className="relative inline-block">
                 <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-4 border-primary/20">
-                  {(isEditing ? editedData.profileImage : userData.profileImage) ? (
+                  {(
+                    isEditing
+                      ? editedData.profilePicture
+                      : userData.profilePicture
+                  ) ? (
                     <img
-                      src={isEditing ? editedData.profileImage : userData.profileImage}
+                      src={
+                        isEditing
+                          ? editedData.profilePicture
+                          : userData.profilePicture
+                      }
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
@@ -310,7 +347,7 @@ export const UserProfile = () => {
                     </span>
                   )}
                 </div>
-                
+
                 {/* Image upload icon - always visible */}
                 <label className="absolute bottom-2 right-2 bg-primary text-white p-2 rounded-full cursor-pointer hover:bg-primary-focus transition-colors shadow-lg">
                   <MdCamera className="w-4 h-4" />
@@ -335,11 +372,15 @@ export const UserProfile = () => {
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-base-300">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-primary">12</div>
-                  <div className="text-xs text-base-content/60">Events Attended</div>
+                  <div className="text-xs text-base-content/60">
+                    Events Attended
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-secondary">5</div>
-                  <div className="text-xs text-base-content/60">Upcoming Events</div>
+                  <div className="text-xs text-base-content/60">
+                    Upcoming Events
+                  </div>
                 </div>
               </div>
             </div>
@@ -354,7 +395,9 @@ export const UserProfile = () => {
               <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                 <MdPerson className="w-5 h-5 text-primary" />
               </div>
-              <h3 className="text-xl font-bold text-base-content">Personal Information</h3>
+              <h3 className="text-xl font-bold text-base-content">
+                Personal Information
+              </h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -413,7 +456,9 @@ export const UserProfile = () => {
                 </div>
                 {isEditing && (
                   <label className="label">
-                    <span className="label-text-alt text-base-content/50">Email cannot be changed</span>
+                    <span className="label-text-alt text-base-content/50">
+                      Email cannot be changed
+                    </span>
                   </label>
                 )}
               </div>
@@ -426,15 +471,15 @@ export const UserProfile = () => {
                 {isEditing ? (
                   <input
                     type="tel"
-                    name="phone"
-                    value={editedData.phone}
+                    name="phoneNumber"
+                    value={editedData.phoneNumber}
                     onChange={handleInputChange}
                     className="input input-bordered w-full"
                   />
                 ) : (
                   <div className="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
                     <MdPhone className="w-4 h-4 text-base-content/60" />
-                    <span>{userData.phone || "Not provided"}</span>
+                    <span>{userData.phoneNumber || "Not provided"}</span>
                   </div>
                 )}
               </div>
@@ -468,14 +513,18 @@ export const UserProfile = () => {
               <div className="w-10 h-10 bg-error/10 rounded-full flex items-center justify-center">
                 <MdSecurity className="w-5 h-5 text-error" />
               </div>
-              <h3 className="text-xl font-bold text-base-content">Security Settings</h3>
+              <h3 className="text-xl font-bold text-base-content">
+                Security Settings
+              </h3>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-base-200 rounded-lg">
                 <div>
                   <h4 className="font-medium">Password</h4>
-                  <p className="text-sm text-base-content/60">Last changed 30 days ago</p>
+                  <p className="text-sm text-base-content/60">
+                    Last changed 30 days ago
+                  </p>
                 </div>
                 <button
                   onClick={() => setShowPasswordModal(true)}
@@ -488,7 +537,9 @@ export const UserProfile = () => {
               <div className="flex items-center justify-between p-4 bg-base-200 rounded-lg">
                 <div>
                   <h4 className="font-medium">Two-Factor Authentication</h4>
-                  <p className="text-sm text-base-content/60">Add an extra layer of security</p>
+                  <p className="text-sm text-base-content/60">
+                    Add an extra layer of security
+                  </p>
                 </div>
                 <input type="checkbox" className="toggle toggle-primary" />
               </div>
@@ -501,22 +552,32 @@ export const UserProfile = () => {
               <div className="w-10 h-10 bg-info/10 rounded-full flex items-center justify-center">
                 <MdNotifications className="w-5 h-5 text-info" />
               </div>
-              <h3 className="text-xl font-bold text-base-content">Notification Preferences</h3>
+              <h3 className="text-xl font-bold text-base-content">
+                Notification Preferences
+              </h3>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="font-medium">Email Notifications</h4>
-                  <p className="text-sm text-base-content/60">Receive event updates via email</p>
+                  <p className="text-sm text-base-content/60">
+                    Receive event updates via email
+                  </p>
                 </div>
-                <input type="checkbox" className="toggle toggle-primary" defaultChecked />
+                <input
+                  type="checkbox"
+                  className="toggle toggle-primary"
+                  defaultChecked
+                />
               </div>
 
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="font-medium">SMS Notifications</h4>
-                  <p className="text-sm text-base-content/60">Receive important alerts via SMS</p>
+                  <p className="text-sm text-base-content/60">
+                    Receive important alerts via SMS
+                  </p>
                 </div>
                 <input type="checkbox" className="toggle toggle-primary" />
               </div>
@@ -524,9 +585,15 @@ export const UserProfile = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="font-medium">Push Notifications</h4>
-                  <p className="text-sm text-base-content/60">Receive notifications in your browser</p>
+                  <p className="text-sm text-base-content/60">
+                    Receive notifications in your browser
+                  </p>
                 </div>
-                <input type="checkbox" className="toggle toggle-primary" defaultChecked />
+                <input
+                  type="checkbox"
+                  className="toggle toggle-primary"
+                  defaultChecked
+                />
               </div>
             </div>
           </div>
@@ -565,7 +632,12 @@ export const UserProfile = () => {
                   <button
                     type="button"
                     className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                    onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                    onClick={() =>
+                      setShowPasswords((prev) => ({
+                        ...prev,
+                        current: !prev.current,
+                      }))
+                    }
                   >
                     {showPasswords.current ? (
                       <MdVisibilityOff className="w-4 h-4 text-base-content/60" />
@@ -594,7 +666,9 @@ export const UserProfile = () => {
                   <button
                     type="button"
                     className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                    onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                    onClick={() =>
+                      setShowPasswords((prev) => ({ ...prev, new: !prev.new }))
+                    }
                   >
                     {showPasswords.new ? (
                       <MdVisibilityOff className="w-4 h-4 text-base-content/60" />
@@ -622,7 +696,12 @@ export const UserProfile = () => {
                   <button
                     type="button"
                     className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                    onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                    onClick={() =>
+                      setShowPasswords((prev) => ({
+                        ...prev,
+                        confirm: !prev.confirm,
+                      }))
+                    }
                   >
                     {showPasswords.confirm ? (
                       <MdVisibilityOff className="w-4 h-4 text-base-content/60" />
@@ -641,7 +720,11 @@ export const UserProfile = () => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={isLoading}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={isLoading}
+                >
                   {isLoading ? (
                     <>
                       <span className="loading loading-spinner loading-sm"></span>
@@ -654,7 +737,10 @@ export const UserProfile = () => {
               </div>
             </form>
           </div>
-          <div className="modal-backdrop" onClick={() => setShowPasswordModal(false)}></div>
+          <div
+            className="modal-backdrop"
+            onClick={() => setShowPasswordModal(false)}
+          ></div>
         </div>
       )}
     </div>

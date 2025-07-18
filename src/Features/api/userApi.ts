@@ -14,7 +14,7 @@ export const userApi = createApi({
         return headers;
     }, 
     }),
-    tagTypes:['users'],
+    tagTypes:['users','user'],
     refetchOnMountOrArgChange:true,
     refetchOnReconnect:true,
     endpoints:(builder) =>({
@@ -37,13 +37,13 @@ export const userApi = createApi({
             query:() => 'users',
             providesTags:['users']
         }),
-        updateUser:builder.mutation({
-            query:({userId,...userDataPayload}) =>({
-                url:`users/${userId}`,
-                method:'PUT',
-                body:userDataPayload
-            }),
-            invalidatesTags:['users']
+        updateUserProfile: builder.mutation({
+        query: ({ userId, ...patch }) => ({
+            url: `users/${userId}`,
+            method: 'PUT',
+            body: patch,
+        }),
+        invalidatesTags: ["user", "users"]
         }),
         deleteUser:builder.mutation({
             query:(userId) =>({

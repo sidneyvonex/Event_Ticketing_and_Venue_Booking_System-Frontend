@@ -1,15 +1,17 @@
 import {
   CalendarDays,
-  Home,
   LogOut,
   Mail,
   Newspaper,
   Settings,
   CreditCard,
   Users,
+  LayoutDashboard,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { clearCredentials } from "../../Features/auth/authSlice";
 
 interface NavLinkProps {
   to: string;
@@ -24,6 +26,14 @@ interface SideNavProps {
 }
 
 export const UserSideNav = ({ collapsed }: SideNavProps) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    dispatch(clearCredentials());
+    navigate("/login");
+  };
+
   return (
     <div
       className={`flex flex-col h-full p-4 text-sm text-gray-100 bg-[#093FB4]`}
@@ -39,7 +49,7 @@ export const UserSideNav = ({ collapsed }: SideNavProps) => {
       <nav className="flex-1 space-y-2">
         <NavItem
           to="/dashboard"
-          icon={<Home size={20} />}
+          icon={<LayoutDashboard size={20} />}
           label="Dashboard"
           active={false}
           collapsed={collapsed}
@@ -89,7 +99,10 @@ export const UserSideNav = ({ collapsed }: SideNavProps) => {
           active={false}
           collapsed={collapsed}
         />
-        <button className="w-full flex items-center gap-2 text-red-400 hover:text-red-300 px-2 py-2 rounded transition">
+        <button
+          className="w-full flex items-center gap-2 text-red-400 hover:text-red-300 px-2 py-2 rounded transition cursor-pointer hover:bg-white/5"
+          onClick={handleLogout}
+        >
           <LogOut size={20} />
           {!collapsed && <span>Sign Out</span>}
         </button>

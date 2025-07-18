@@ -14,13 +14,24 @@ export const Topbar = ({ toggleSidebar, toggleMobileSidebar }: TopbarProps) => {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
 
-  const initials = user?.fullName
-    ?.split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase();
-
   const profileImage = user?.profileUrl;
+
+  // Generate initials for fallback
+  const getInitials = () => {
+    if (user?.fullName) {
+      return user.fullName
+        .split(" ")
+        .map((name: string) => name.charAt(0))
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return "U";
+  };
+
+  const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    getInitials()
+  )}&background=ED3500&color=fff&size=128&bold=true`;
 
   const handleLogout = async () => {
     dispatch(clearCredentials());
@@ -50,17 +61,22 @@ export const Topbar = ({ toggleSidebar, toggleMobileSidebar }: TopbarProps) => {
           <div
             tabIndex={0}
             role="button"
-            className="btn btn-ghost btn-circle avatar border-0  bg-[#ED3500] "
+            className={`btn btn-ghost btn-circle avatar border-0 ${
+              !profileImage ? "bg-[#ED3500]" : ""
+            }`}
           >
-            {profileImage ? (
-              <div className="w-10 rounded-full overflow-hidden hover:outline-1 hover:outline-offset-2 hover:outline-solid">
-                <img src={profileImage} alt="Profile Image" />
-              </div>
-            ) : (
-              <span className="text-white font-semibold text-lg leading-none">
-                {initials}
-              </span>
-            )}
+            <div className="w-10 rounded-full overflow-hidden hover:outline-1 hover:outline-offset-2 hover:outline-solid">
+              <img
+                src={profileImage || fallbackAvatar}
+                alt="User Avatar"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.src = fallbackAvatar;
+                }}
+              />
+            </div>
           </div>
 
           <ul
@@ -69,7 +85,9 @@ export const Topbar = ({ toggleSidebar, toggleMobileSidebar }: TopbarProps) => {
           >
             <li>
               <Link
-                to={user?.role === "admin" ? "/admindashboard" : "/dashboard"}
+                to={
+                  user?.userRole === "admin" ? "/admindashboard" : "/dashboard"
+                }
                 className="text-gray-700 hover:bg-[#093FB4] hover:text-white px-3 py-2 rounded transition-colors duration-200"
               >
                 <LayoutDashboard className="w-4 h-4" />
