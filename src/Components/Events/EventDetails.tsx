@@ -312,7 +312,8 @@ export const EventDetails = () => {
     ? parseFloat(eventData.ticketPrice) * ticketQuantity
     : 0;
   const availableTickets = eventData
-    ? (eventData.ticketsTotal || eventData.venue?.venueCapacity || 1000) - (eventData.ticketsSold || 0)
+    ? (eventData.ticketsTotal || eventData.venue?.venueCapacity || 1000) -
+      (eventData.ticketsSold || 0)
     : 0;
 
   // Debug logging
@@ -396,7 +397,8 @@ export const EventDetails = () => {
                       {eventData?.venue?.venueName || "Event Venue"}
                     </p>
                     <p className="text-xs text-base-content/50">
-                      {eventData?.venue?.venueAddress || "Location details will be provided"}
+                      {eventData?.venue?.venueAddress ||
+                        "Location details will be provided"}
                     </p>
                   </div>
                 </div>
@@ -408,7 +410,11 @@ export const EventDetails = () => {
                   <div>
                     <p className="font-medium">Capacity</p>
                     <p className="text-sm text-base-content/70">
-                      {availableTickets} of {eventData?.ticketsTotal || eventData?.venue?.venueCapacity || "1000"} available
+                      {availableTickets} of{" "}
+                      {eventData?.ticketsTotal ||
+                        eventData?.venue?.venueCapacity ||
+                        "1000"}{" "}
+                      available
                     </p>
                   </div>
                 </div>
@@ -542,8 +548,8 @@ export const EventDetails = () => {
                   </span>
                 </div>
                 <p className="text-xs text-base-content/60 mt-1">
-                  {eventData?.ticketsSold || 0} tickets sold • {availableTickets}{" "}
-                  remaining
+                  {eventData?.ticketsSold || 0} tickets sold •{" "}
+                  {availableTickets} remaining
                 </p>
               </div>
             </div>
