@@ -3,11 +3,11 @@ import type { RootState } from "../app/store";
 
 export const eventApi = createApi({
     reducerPath: 'eventApi',
-    baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:3000/api',
+    baseQuery: fetchBaseQuery({ baseUrl: 'https://event-ticketing-and-venue-booking-system.onrender.com/api',
     prepareHeaders: (headers, { getState }) => {
         const token = (getState() as RootState).auth.token;
         if (token) {
-            headers.set('Authorization', `${token}`);
+            headers.set('Authorization', `Bearer ${token}`);
         }
         headers.set('Content-Type', 'application/json');
         return headers;
@@ -20,6 +20,10 @@ export const eventApi = createApi({
     endpoints: (builder) => ({
         getAllEvents: builder.query({
             query: () => 'events',
+            providesTags: ['events']
+        }),
+        getEventById: builder.query({
+            query: (eventId) => `events/${eventId}`,
             providesTags: ['events']
         }),
         createEvent:builder.mutation({

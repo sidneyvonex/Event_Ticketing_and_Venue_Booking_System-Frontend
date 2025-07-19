@@ -4,7 +4,7 @@ import type { RootState } from "../app/store";
 export const paymentsApi = createApi({
   reducerPath: "paymentsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:3000/api",
+    baseUrl: "https://event-ticketing-and-venue-booking-system.onrender.com/api",
     prepareHeaders: (headers, { getState }) => {
       const state = getState() as RootState;
       const token = state.auth?.token;

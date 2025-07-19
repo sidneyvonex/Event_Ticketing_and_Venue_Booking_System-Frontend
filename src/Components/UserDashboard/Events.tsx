@@ -1,10 +1,9 @@
-import { AllEvents } from "../Events/AllEvents"
-
+import { AllEvents } from "../Events/AllEvents";
 
 export const Events = () => {
   return (
     <div>
-        <AllEvents/>
+      <AllEvents basePath="/dashboard/events" />
     </div>
-  )
-}
+  );
+};
