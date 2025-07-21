@@ -22,7 +22,7 @@ export const bookingsApi = createApi({
             query:() => 'bookings',
             providesTags:['bookings']
         }),
-        createBook:builder.mutation({
+        createBooking:builder.mutation({
             query:(createBookingPayload)=>({
                 url:'bookings',
                 method:'POST',
@@ -55,7 +55,7 @@ export const bookingsApi = createApi({
 // Export hooks for usage in functional components
 export const { 
     useGetAllBooksQuery,
-    useCreateBookMutation,
+    useCreateBookingMutation,
     useGetAllBookingsForUserIdQuery,
     useUpdateBookingsMutation,
     useDeleteBookingsMutation

@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../Features/app/store";
 import { eventApi } from "../../Features/api/EventApi";
-import { useCreateBookMutation } from "../../Features/api/BookingsApi";
+import { useCreateBookingMutation } from "../../Features/api/BookingsApi";
 import {
   MdCalendarToday,
   MdLocationOn,
@@ -35,7 +35,7 @@ export const EventDetails = () => {
   const [isBooking, setIsBooking] = useState(false);
 
   // API hooks
-  const [createBooking] = useCreateBookMutation();
+  const [createBooking] = useCreateBookingMutation();
 
   // Fetch event details
   const {
@@ -91,29 +91,56 @@ export const EventDetails = () => {
       return;
     }
 
+    if (availableTickets <= 0) {
+      toast.error("No tickets available for this event");
+      return;
+    }
+
+    if (ticketQuantity <= 0) {
+      toast.error("Please select at least one ticket");
+      return;
+    }
+
     setIsBooking(true);
     try {
       const totalAmount = parseFloat(eventData.ticketPrice) * ticketQuantity;
 
+
       const bookingData = {
-        eventId: eventData.eventId,
-        userId: user?.userId,
-        quantity: ticketQuantity,
-        totalAmount,
+        eventId: Number(eventData.eventId),
+        userId: Number(user?.userId),
+        quantity: Number(ticketQuantity),
+        totalAmount: Number(totalAmount),
+        bookingStatus: "Confirmed", // Fixed: Must be capitalized!
       };
+
 
       const result = await createBooking(bookingData).unwrap();
 
-      console.log("Booking created:", result);
+      console.log("✅ Booking successful:", result);
       toast.success(`Successfully booked ${ticketQuantity} ticket(s)!`);
 
       // Navigate to booking confirmation or user dashboard
       navigate("/dashboard/bookings");
+      
     } catch (error: any) {
-      console.error("Booking error:", error);
-      toast.error(
-        error.data?.message || "Failed to book tickets. Please try again."
-      );
+      console.log("❌ BOOKING FAILED");
+      console.log("Full error object:", error);
+      console.log("Error data:", error?.data);
+      console.log("Error status:", error?.status);
+      console.log("Error message:", error?.message);
+
+      // Try to extract the actual error message
+      let errorMessage = "Failed to book tickets. Please try again.";
+      if (error?.data?.error) {
+        errorMessage = error.data.error;
+      } else if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsBooking(false);
     }
@@ -320,7 +347,8 @@ export const EventDetails = () => {
   console.log("Event Data:", eventData);
   console.log("Available Tickets:", availableTickets);
   console.log("Ticket Price:", eventData?.ticketPrice);
-  console.log("Venue:", eventData?.venue);
+  console.log("User data:", user);
+  console.log("Is Authenticated:", isAuthenticated);
 
   return (
     <div className="min-h-screen bg-base-200">
