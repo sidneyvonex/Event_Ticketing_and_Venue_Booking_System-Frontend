@@ -1,59 +1,57 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Link } from "react-router";
-import HeroImg from "../../assets/Hero.jpeg"
+import HeroImg from "../../assets/Hero.jpeg";
 import { useState } from "react";
 import { CheckCircle, Eye, EyeOff, LogIn, XCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { userApi } from "../../Features/api/userApi";
-import {useNavigate} from "react-router-dom"
-import { Toaster,toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { Toaster, toast } from "sonner";
 import { useDispatch } from "react-redux";
 import type { UserLoginInputs } from "../../types/types";
 import { setCredentials } from "../../Features/auth/authSlice";
 
-
-
-
-
 export const FormSec = () => {
+  const dispatch = useDispatch();
 
-  const dispatch =useDispatch();
-
-  const [loginUser, { isLoading:dataLoading}] =
+  const [loginUser, { isLoading: dataLoading }] =
     userApi.useLoginUserMutation();
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-    const {register,handleSubmit,formState:{errors}} = useForm<UserLoginInputs>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<UserLoginInputs>();
 
-    const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-
-    const formSubmit = async (data: UserLoginInputs) => {
-      const loadingToastId = toast.loading("Logging in ....");
-      try {
-        const res = await loginUser(data).unwrap();
-        console.log("🌟 ~ formSubmit ~ res:", res);
-        toast.success(res.message, {
-          id: loadingToastId,
-          icon: <CheckCircle className="text-green-500 w-5 h-5" />,
-        });
-        dispatch(setCredentials(res))
-        navigate('/dashboard')
-      } catch (error: any) {
-        console.log("🌟 Failed to Login:", error);
-        toast.error("Failed to Login:  " + error.data?.error, {
-          icon: <XCircle className="text-red-500 w-5 h-5" />,
-        });
-        toast.dismiss(loadingToastId);
-      }
-    };
+  const formSubmit = async (data: UserLoginInputs) => {
+    const loadingToastId = toast.loading("Logging in ....");
+    try {
+      const res = await loginUser(data).unwrap();
+      console.log("🌟 ~ formSubmit ~ res:", res);
+      toast.success(res.message, {
+        id: loadingToastId,
+        icon: <CheckCircle className="text-green-500 w-5 h-5" />,
+      });
+      dispatch(setCredentials(res));
+      navigate("/redirect-dashboard");
+    } catch (error: any) {
+      console.log("🌟 Failed to Login:", error);
+      toast.error("Failed to Login:  " + error.data?.error, {
+        icon: <XCircle className="text-red-500 w-5 h-5" />,
+      });
+      toast.dismiss(loadingToastId);
+    }
+  };
   return (
     <div
       className="h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center"
       style={{ backgroundImage: `url(${HeroImg})` }}
     >
-      <Toaster  richColors position="top-right"/>
+      <Toaster richColors position="top-right" />
       <div className="w-full px-4 sm:px-6 lg:px-8 max-w-md sm:max-w-lg md:max-w-xl">
         <div className="bg-white p-8 sm:p-10 shadow-md rounded-md">
           <h2 className="text-3xl font-bold mb-2 text-center text-[#093FB4]">
@@ -166,4 +164,4 @@ export const FormSec = () => {
       </div>
     </div>
   );
-}
+};

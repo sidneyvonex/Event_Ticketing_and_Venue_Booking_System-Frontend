@@ -1,4 +1,5 @@
 import {
+  LayoutDashboard,
   CalendarDays,
   LogOut,
   Mail,
@@ -6,11 +7,13 @@ import {
   Settings,
   CreditCard,
   Users,
-  LayoutDashboard,
+  MapPin,
+  TrendingUp,
+  BarChart3,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useDispatch } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { clearCredentials } from "../../Features/auth/authSlice";
 
 interface NavLinkProps {
@@ -21,82 +24,112 @@ interface NavLinkProps {
   collapsed?: boolean;
 }
 
-interface SideNavProps {
+interface AdminSideNavProps {
   collapsed: boolean;
 }
 
-export const UserSideNav = ({ collapsed }: SideNavProps) => {
+export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     dispatch(clearCredentials());
     navigate("/login");
   };
 
+  const isActive = (path: string) => {
+    return (
+      location.pathname === path || location.pathname.startsWith(path + "/")
+    );
+  };
+
   return (
-    <div
-      className={`flex flex-col h-full p-4 text-sm text-gray-100 bg-[#093FB4]`}
-    >
+    <div className="flex flex-col h-full p-4 text-sm text-gray-100 bg-[#093FB4]">
       <div
         className={`text-xl font-bold text-orange-500 mb-6 ${
           collapsed ? "text-center" : ""
         }`}
       >
         {!collapsed && "TicKenya"}
+        {collapsed && "TK"}
       </div>
 
       <nav className="flex-1 space-y-2">
         <NavItem
-          to="/dashboard"
+          to="/admindashboard"
           icon={<LayoutDashboard size={20} />}
           label="Dashboard"
-          active={false}
+          active={
+            isActive("/admindashboard") &&
+            location.pathname === "/admindashboard"
+          }
           collapsed={collapsed}
         />
         <NavItem
-          to="/dashboard/bookings"
+          to="/admindashboard/bookings"
           icon={<CalendarDays size={20} />}
-          label="Bookings"
-          active={false}
+          label="All Bookings"
+          active={isActive("/admindashboard/bookings")}
           collapsed={collapsed}
         />
         <NavItem
-          to="/dashboard/events"
+          to="/admindashboard/events"
           icon={<Newspaper size={20} />}
-          label="Events"
-          active={false}
+          label="All Events"
+          active={isActive("/admindashboard/events")}
           collapsed={collapsed}
         />
         <NavItem
-          to="/dashboard/payments"
+          to="/admindashboard/venues"
+          icon={<MapPin size={20} />}
+          label="All Venues"
+          active={isActive("/admindashboard/venues")}
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/admindashboard/payments"
           icon={<CreditCard size={20} />}
           label="Payments"
-          active={false}
+          active={isActive("/admindashboard/payments")}
           collapsed={collapsed}
         />
         <NavItem
-          to="/dashboard/support"
+          to="/admindashboard/support"
           icon={<Mail size={20} />}
-          label="Support"
-          active={false}
+          label="Support Tickets"
+          active={isActive("/admindashboard/support")}
           collapsed={collapsed}
         />
         <NavItem
-          to="/dashboard/profile"
-          icon={<Users size={20} />}
-          label="Profile"
-          active={false}
+          to="/admindashboard/reports"
+          icon={<BarChart3 size={20} />}
+          label="Sales Reports"
+          active={isActive("/admindashboard/reports")}
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/admindashboard/analytics"
+          icon={<TrendingUp size={20} />}
+          label="Analytics"
+          active={isActive("/admindashboard/analytics")}
           collapsed={collapsed}
         />
       </nav>
 
       <div className="pt-4 border-t border-white/10 space-y-2">
         <NavItem
-          to="/settings"
+          to="/admindashboard/profile"
+          icon={<Users size={20} />}
+          label="Admin Profile"
+          active={isActive("/admindashboard/profile")}
+          collapsed={collapsed}
+        />
+        <NavItem
+          to="/admindashboard/settings"
           icon={<Settings size={20} />}
           label="Settings"
-          active={false}
+          active={isActive("/admindashboard/settings")}
           collapsed={collapsed}
         />
         <button

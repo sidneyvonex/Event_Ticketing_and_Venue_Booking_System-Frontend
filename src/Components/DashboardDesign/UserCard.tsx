@@ -5,7 +5,7 @@ interface CardProps {
 }
 
 const UserCard: React.FC<CardProps> = ({ children }) => {
-  return <div className="p-3 ">{children}</div>;
+  return <div className="bg-gray-50 min-h-full">{children}</div>;
 };
 
 export default UserCard;

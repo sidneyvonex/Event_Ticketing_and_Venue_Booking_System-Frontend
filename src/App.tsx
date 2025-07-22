@@ -9,6 +9,7 @@ import { Contact } from "./Pages/Contact";
 import { Help } from "./Pages/Help";
 import { Blog } from "./Pages/Blog";
 import { UserDashboard } from "./Pages/UserDashboard";
+import { AdminDashboard } from "./Pages/AdminDashboard";
 import { UserProfile } from "./Components/UserDashboard/UserProfile";
 import { UserSupport } from "./Components/UserDashboard/UserSupport";
 import ProtectedRoutes from "./Components/Home/ProtectedRoutes";
@@ -17,6 +18,13 @@ import { UserBookings } from "./Components/UserDashboard/UserBookings";
 import { UserDashboardOverview } from "./Components/UserDashboard/UserDashboardOverview";
 import { UserPaymentsPage } from "./Components/UserDashboard/UserPaymentsPage";
 import { EventDetails } from "./Components/Events/EventDetails";
+import { AdminDashboardOverview } from "./Components/AdminDashboard/AdminDashboardOverview";
+import { AllBookings } from "./Components/AdminDashboard/AllBookings";
+import { AllPayments } from "./Components/AdminDashboard/AllPayments";
+import { AllVenues } from "./Components/AdminDashboard/AllVenues";
+import { AllSupportTickets } from "./Components/AdminDashboard/AllSupportTickets";
+import { AdminProfile } from "./Components/AdminDashboard/AdminProfile";
+import { RoleBasedRedirect } from "./Components/Home/RoleBasedRedirect";
 
 function App() {
   const router = createBrowserRouter([
@@ -33,6 +41,11 @@ function App() {
     {
       path: "login",
       element: <Login />,
+      errorElement: <NotFound />,
+    },
+    {
+      path: "redirect-dashboard",
+      element: <RoleBasedRedirect />,
       errorElement: <NotFound />,
     },
     {
@@ -96,6 +109,81 @@ function App() {
         {
           path: "support",
           element: <UserSupport />,
+        },
+      ],
+    },
+    {
+      path: "/admindashboard",
+      element: (
+        <ProtectedRoutes>
+          <AdminDashboard />
+        </ProtectedRoutes>
+      ),
+      errorElement: <NotFound />,
+      children: [
+        {
+          index: true,
+          element: <AdminDashboardOverview />,
+        },
+        {
+          path: "profile",
+          element: <AdminProfile />,
+        },
+        {
+          path: "bookings",
+          element: <AllBookings />,
+        },
+        {
+          path: "payments",
+          element: <AllPayments />,
+        },
+        {
+          path: "venues",
+          element: <AllVenues />,
+        },
+        {
+          path: "events",
+          children: [
+            {
+              index: true,
+              element: <AllEvents basePath="/admindashboard/events" />,
+            },
+            {
+              path: ":eventId",
+              element: <EventDetails />,
+            },
+          ],
+        },
+        {
+          path: "support",
+          element: <AllSupportTickets />,
+        },
+        {
+          path: "reports",
+          element: (
+            <div className="p-6">
+              <h1 className="text-2xl font-bold">Sales Reports</h1>
+              <p>Sales reports component coming soon...</p>
+            </div>
+          ),
+        },
+        {
+          path: "analytics",
+          element: (
+            <div className="p-6">
+              <h1 className="text-2xl font-bold">Analytics</h1>
+              <p>Analytics component coming soon...</p>
+            </div>
+          ),
+        },
+        {
+          path: "settings",
+          element: (
+            <div className="p-6">
+              <h1 className="text-2xl font-bold">Admin Settings</h1>
+              <p>Settings component coming soon...</p>
+            </div>
+          ),
         },
       ],
     },
