@@ -26,27 +26,7 @@ import {
 } from "../../Features/api/BookingsApi";
 import { eventApi } from "../../Features/api/EventApi";
 import { toast, Toaster } from "sonner";
-
-interface Booking {
-  bookingId: number;
-  eventId: number;
-  userId: number;
-  quantity: number;
-  totalAmount: string;
-  bookingStatus: string;
-  createdAt: string;
-  bookingDate?: string;
-  user?: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  event?: {
-    eventTitle: string;
-    eventDate: string;
-    venue: string;
-  };
-}
+import type { BookingsDataTypes } from "../../types/types";
 
 export const AllBookings = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,7 +34,8 @@ export const AllBookings = () => {
   const [sortBy, setSortBy] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedBooking, setSelectedBooking] =
+    useState<BookingsDataTypes | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
@@ -68,7 +49,6 @@ export const AllBookings = () => {
     data: bookings = [],
     isLoading: bookingsLoading,
     error: bookingsError,
-    refetch: refetchBookings,
   } = useGetAllBooksQuery({});
   const { data: events = [] } = eventApi.useGetAllEventsQuery({});
 
@@ -80,7 +60,7 @@ export const AllBookings = () => {
 
   // Enhanced bookings with event and user data
   const enhancedBookings = useMemo(() => {
-    return bookings.map((booking: Booking) => {
+    return bookings.map((booking: BookingsDataTypes) => {
       const event = events.find((e: any) => e.eventId === booking.eventId);
       return {
         ...booking,
@@ -88,10 +68,12 @@ export const AllBookings = () => {
           ? {
               eventTitle: event.eventTitle || "Unknown Event",
               eventDate: event.eventDate || "",
-              venue:
-                typeof event.venue === "object"
-                  ? event.venue?.venueName
-                  : event.venue,
+              venue: {
+                venueName:
+                  typeof event.venue === "object"
+                    ? event.venue?.venueName
+                    : event.venue || "Unknown Venue",
+              },
             }
           : null,
       };
@@ -105,7 +87,7 @@ export const AllBookings = () => {
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(
-        (booking: Booking) =>
+        (booking: BookingsDataTypes) =>
           booking.event?.eventTitle
             ?.toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
@@ -126,12 +108,12 @@ export const AllBookings = () => {
     // Status filter
     if (statusFilter !== "All") {
       filtered = filtered.filter(
-        (booking: Booking) => booking.bookingStatus === statusFilter
+        (booking: BookingsDataTypes) => booking.bookingStatus === statusFilter
       );
     }
 
     // Sort
-    filtered.sort((a: Booking, b: Booking) => {
+    filtered.sort((a: BookingsDataTypes, b: BookingsDataTypes) => {
       switch (sortBy) {
         case "newest":
           return (
@@ -165,7 +147,7 @@ export const AllBookings = () => {
   // Status counts for summary
   const statusCounts = useMemo(() => {
     const counts = enhancedBookings.reduce(
-      (acc: Record<string, number>, booking: Booking) => {
+      (acc: Record<string, number>, booking: BookingsDataTypes) => {
         const status = booking.bookingStatus || "Unknown";
         acc[status] = (acc[status] || 0) + 1;
         return acc;
@@ -221,7 +203,7 @@ export const AllBookings = () => {
     return `Ksh ${parseFloat(amount || "0").toLocaleString()}`;
   };
 
-  const openModal = (booking: Booking) => {
+  const openModal = (booking: BookingsDataTypes) => {
     setSelectedBooking(booking);
     setIsModalOpen(true);
   };
@@ -231,7 +213,7 @@ export const AllBookings = () => {
     setIsModalOpen(false);
   };
 
-  const openEditModal = (booking: Booking) => {
+  const openEditModal = (booking: BookingsDataTypes) => {
     setSelectedBooking(booking);
     setEditFormData({
       bookingStatus: booking.bookingStatus,
@@ -266,6 +248,15 @@ export const AllBookings = () => {
         editFormData.quantity * pricePerTicket
       ).toString();
 
+      console.log("Updating booking with ID:", selectedBooking.bookingId);
+      console.log("Update payload:", {
+        bookingId: selectedBooking.bookingId,
+        bookingStatus: editFormData.bookingStatus,
+        quantity: editFormData.quantity,
+        eventId: editFormData.eventId,
+        totalAmount: newTotalAmount,
+      });
+
       await updateBooking({
         bookingId: selectedBooking.bookingId,
         bookingStatus: editFormData.bookingStatus,
@@ -279,9 +270,27 @@ export const AllBookings = () => {
       });
 
       closeEditModal();
-      refetchBookings();
+      // Don't call refetchBookings() as RTK Query auto-updates due to invalidatesTags
     } catch (error: any) {
       console.error("Update booking error:", error);
+
+      // Handle HTML error responses (backend routing issues)
+      if (
+        error?.status === "PARSING_ERROR" &&
+        error?.data?.includes("<!DOCTYPE")
+      ) {
+        toast.error(
+          "Backend routing error: PUT endpoint not found. Please check backend server.",
+          {
+            position: "top-right",
+            duration: 6000,
+          }
+        );
+        console.error(
+          "Backend appears to be returning HTML instead of JSON. Check if PUT /api/bookings/{id} route exists."
+        );
+        return;
+      }
 
       // Handle different types of errors
       if (error?.status === 400) {
@@ -290,18 +299,23 @@ export const AllBookings = () => {
           duration: 4000,
         });
       } else if (error?.status === 404) {
-        toast.error("Booking not found. It may have been deleted.", {
-          position: "top-right",
-          duration: 4000,
-        });
-      } else if (
-        error?.originalStatus === 404 ||
-        error?.status === "PARSING_ERROR"
-      ) {
-        toast.error("Update functionality temporarily unavailable.", {
-          position: "top-right",
-          duration: 5000,
-        });
+        toast.error(
+          "Booking not found. It may have been deleted by another user.",
+          {
+            position: "top-right",
+            duration: 4000,
+          }
+        );
+        // Close modal since booking doesn't exist
+        closeEditModal();
+      } else if (error?.originalStatus === 404) {
+        toast.error(
+          "Backend endpoint not found. PUT /api/bookings/{id} route may be missing.",
+          {
+            position: "top-right",
+            duration: 6000,
+          }
+        );
       } else {
         toast.error("Failed to update booking. Please try again.", {
           position: "top-right",
@@ -320,15 +334,35 @@ export const AllBookings = () => {
     }
 
     try {
+      console.log("Deleting booking with ID:", bookingId);
+
       await deleteBooking(bookingId).unwrap();
 
       toast.success("Booking deleted successfully!", {
         position: "top-right",
       });
 
-      refetchBookings();
+      // Don't call refetchBookings() as RTK Query auto-updates due to invalidatesTags
     } catch (error: any) {
       console.error("Delete booking error:", error);
+
+      // Handle HTML error responses (backend routing issues)
+      if (
+        error?.status === "PARSING_ERROR" &&
+        error?.data?.includes("<!DOCTYPE")
+      ) {
+        toast.error(
+          "Backend routing error: DELETE endpoint not found. Please check backend server.",
+          {
+            position: "top-right",
+            duration: 6000,
+          }
+        );
+        console.error(
+          "Backend appears to be returning HTML instead of JSON. Check if DELETE /api/bookings/{id} route exists."
+        );
+        return;
+      }
 
       // Handle different types of errors
       if (error?.status === 400) {
@@ -337,18 +371,23 @@ export const AllBookings = () => {
           duration: 4000,
         });
       } else if (error?.status === 404) {
-        toast.error("Booking not found. It may have already been deleted.", {
-          position: "top-right",
-          duration: 4000,
-        });
-      } else if (
-        error?.originalStatus === 404 ||
-        error?.status === "PARSING_ERROR"
-      ) {
-        toast.error("Delete functionality temporarily unavailable.", {
-          position: "top-right",
-          duration: 5000,
-        });
+        toast.error(
+          "Booking not found. It may have already been deleted by another user.",
+          {
+            position: "top-right",
+            duration: 4000,
+          }
+        );
+        // Force refresh the bookings list to reflect current state
+        setTimeout(() => window.location.reload(), 2000);
+      } else if (error?.originalStatus === 404) {
+        toast.error(
+          "Backend endpoint not found. DELETE /api/bookings/{id} route may be missing.",
+          {
+            position: "top-right",
+            duration: 6000,
+          }
+        );
       } else {
         toast.error("Failed to delete booking. Please try again.", {
           position: "top-right",
@@ -449,7 +488,7 @@ export const AllBookings = () => {
                 {formatCurrency(
                   enhancedBookings
                     .reduce(
-                      (sum: number, booking: Booking) =>
+                      (sum: number, booking: BookingsDataTypes) =>
                         sum + parseFloat(booking.totalAmount || "0"),
                       0
                     )
@@ -552,7 +591,7 @@ export const AllBookings = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {paginatedBookings.map((booking: Booking) => (
+              {paginatedBookings.map((booking: BookingsDataTypes) => (
                 <tr key={booking.bookingId} className="hover:bg-gray-50">
                   <td className="py-4 px-4">
                     <span className="font-medium text-blue-600">
@@ -564,10 +603,10 @@ export const AllBookings = () => {
                       <p className="font-medium text-gray-900">
                         {booking.event?.eventTitle || "Unknown Event"}
                       </p>
-                      {booking.event?.venue && (
+                      {booking.event?.venue.venueName && (
                         <p className="text-sm text-gray-600 flex items-center gap-1">
                           <MapPin size={12} />
-                          {booking.event.venue}
+                          {booking.event.venue.venueName}
                         </p>
                       )}
                     </div>
@@ -639,7 +678,7 @@ export const AllBookings = () => {
 
         {/* Mobile Cards */}
         <div className="lg:hidden">
-          {paginatedBookings.map((booking: Booking) => (
+          {paginatedBookings.map((booking: BookingsDataTypes) => (
             <div
               key={booking.bookingId}
               className="border-b border-gray-200 p-4 space-y-3"
@@ -661,14 +700,14 @@ export const AllBookings = () => {
                   <p className="font-medium text-gray-900">
                     {booking.event?.eventTitle || "Unknown Event"}
                   </p>
-                  {booking.event?.venue && (
+                  {booking.event?.venue.venueName && (
                     <p className="text-sm text-gray-600 flex items-center gap-1">
                       <MapPin size={12} />
-                      {booking.event.venue}
+                      {booking.event.venue.venueName}
                     </p>
                   )}
                 </div>
-
+                {/* Customer Info */}
                 <div>
                   <span className="text-xs text-gray-500 uppercase tracking-wide">
                     Customer
@@ -881,7 +920,7 @@ export const AllBookings = () => {
                         </p>
                       </div>
                     )}
-                    {selectedBooking.event?.venue && (
+                    {selectedBooking.event?.venue.venueName && (
                       <div>
                         <span className="text-gray-600 font-medium text-sm">
                           Venue:
@@ -892,7 +931,7 @@ export const AllBookings = () => {
                             className="text-red-500 mt-0.5 shrink-0"
                           />
                           <span className="break-words">
-                            {selectedBooking.event.venue}
+                            {selectedBooking.event.venue.venueName}
                           </span>
                         </p>
                       </div>
@@ -1003,16 +1042,6 @@ export const AllBookings = () => {
                         {formatDate(selectedBooking.createdAt)}
                       </p>
                     </div>
-                    {selectedBooking.bookingDate && (
-                      <div>
-                        <span className="text-gray-600 font-medium text-sm">
-                          Booking Date:
-                        </span>
-                        <p className="text-gray-900">
-                          {formatDate(selectedBooking.bookingDate)}
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1042,7 +1071,7 @@ export const AllBookings = () => {
 
       {/* Edit Booking Modal */}
       {isEditModalOpen && selectedBooking && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+        <div className="fixed inset-0 backdrop-blur-sm  bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 shrink-0">

@@ -26,28 +26,37 @@ export const eventApi = createApi({
             query: (eventId) => `events/${eventId}`,
             providesTags: ['events']
         }),
-        createEvent:builder.mutation({
-            query:(createEventPayload) => ({
-                url:'orders',
-                method:'POST',
-                body:createEventPayload,
+        createEvent: builder.mutation({
+            query: (createEventPayload) => ({
+                url: 'events',
+                method: 'POST',
+                body: createEventPayload,
             }),
-            invalidatesTags:['events']
+            invalidatesTags: ['events']
         }),
-        updateEvent:builder.mutation({
-            query:({eventId,...eventDataPayload}) => ({
-                url:`events/${eventId}`,
-                method:'PUT',
-                body:eventDataPayload,
+        updateEvent: builder.mutation({
+            query: ({ eventId, ...eventDataPayload }) => ({
+                url: `events/${eventId}`,
+                method: 'PUT',
+                body: eventDataPayload,
             }),
-            invalidatesTags:['events']
+            invalidatesTags: ['events']
         }),
-        deleteOrder:builder.mutation({
-            query:(eventId) => ({
-                url:`events/${eventId}`,
-                method:'DELETE',
+        deleteEvent: builder.mutation({
+            query: (eventId) => ({
+                url: `events/${eventId}`,
+                method: 'DELETE',
             }),
-            invalidatesTags:['events']
+            invalidatesTags: ['events']
         })
     })
 })
+
+// Export hooks for usage in functional components
+export const {
+    useGetAllEventsQuery,
+    useGetEventByIdQuery,
+    useCreateEventMutation,
+    useUpdateEventMutation,
+    useDeleteEventMutation
+} = eventApi;

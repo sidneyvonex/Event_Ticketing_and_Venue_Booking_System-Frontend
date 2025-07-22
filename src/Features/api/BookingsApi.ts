@@ -60,3 +60,4 @@ export const {
     useUpdateBookingsMutation,
     useDeleteBookingsMutation
 } = bookingsApi;
+

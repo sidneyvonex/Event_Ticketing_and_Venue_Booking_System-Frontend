@@ -25,6 +25,7 @@ import { AllVenues } from "./Components/AdminDashboard/AllVenues";
 import { AllSupportTickets } from "./Components/AdminDashboard/AllSupportTickets";
 import { AdminProfile } from "./Components/AdminDashboard/AdminProfile";
 import { RoleBasedRedirect } from "./Components/Home/RoleBasedRedirect";
+import { AdminEvents } from "./Components/AdminDashboard/AdminEvents";
 
 function App() {
   const router = createBrowserRouter([
@@ -146,7 +147,7 @@ function App() {
           children: [
             {
               index: true,
-              element: <AllEvents basePath="/admindashboard/events" />,
+              element: <AdminEvents/>,
             },
             {
               path: ":eventId",

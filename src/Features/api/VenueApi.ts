@@ -49,10 +49,3 @@ export const venueApi = createApi({
   }),
 });
 
-// Export hooks for usage in functional components
-export const {
-  useCreateVenueMutation,
-  useGetAllVenuesQuery,
-  useUpdateVenueMutation,
-  useDeleteVenueMutation,
-} = venueApi;

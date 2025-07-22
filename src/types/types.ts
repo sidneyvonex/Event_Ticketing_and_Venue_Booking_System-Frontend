@@ -38,22 +38,28 @@ export interface UserLoginInputs{
     }
   }
 
+
+
   export interface BookingsDataTypes{
     bookingId:number,
     userId:number,
     eventId:number,
     quantity:number,
-    totalAmount:number,
+    totalAmount:string,
     bookingStatus:string,
     createdAt:string,
     upadtedAt:string,
+    user?: {
+      firstName: string;
+      lastName: string;
+      email: string;
+  };
     event:{
       eventTitle:string,
       eventDate:string,
       eventTime:string,
       ticketPrice:number,
       ticketsTotal:number,
-
       venue:{
         venueName:string,
       },
