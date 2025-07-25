@@ -30,6 +30,7 @@ const authSlice = createSlice({
             state.token=null;
             state.userRole=null;
             state.isAuthenticated=false;
+            state.profileUrl=null;
         }
     }
 })

@@ -26,6 +26,7 @@ import { AllSupportTickets } from "./Components/AdminDashboard/AllSupportTickets
 import { AdminProfile } from "./Components/AdminDashboard/AdminProfile";
 import { RoleBasedRedirect } from "./Components/Home/RoleBasedRedirect";
 import { AdminEvents } from "./Components/AdminDashboard/AdminEvents";
+import SalesReport from "./Components/AdminDashboard/SalesReport";
 
 function App() {
   const router = createBrowserRouter([
@@ -161,21 +162,7 @@ function App() {
         },
         {
           path: "reports",
-          element: (
-            <div className="p-6">
-              <h1 className="text-2xl font-bold">Sales Reports</h1>
-              <p>Sales reports component coming soon...</p>
-            </div>
-          ),
-        },
-        {
-          path: "analytics",
-          element: (
-            <div className="p-6">
-              <h1 className="text-2xl font-bold">Analytics</h1>
-              <p>Analytics component coming soon...</p>
-            </div>
-          ),
+          element:<SalesReport/>
         },
         {
           path: "settings",

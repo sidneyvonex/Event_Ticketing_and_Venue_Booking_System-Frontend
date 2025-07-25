@@ -57,7 +57,7 @@ export const paymentsApi = createApi({
     // Update payment status (for processing, confirming, etc.)
     updatePaymentStatus: builder.mutation({
       query: ({ paymentId, ...updatePayload }) => ({
-        url: `payments/${paymentId}/status`,
+        url: `payments/${paymentId}`,
         method: "PUT",
         body: updatePayload,
       }),
@@ -123,4 +123,10 @@ export const paymentsApi = createApi({
   }),
 });
 
+export const {
+  useGetAllPaymentsQuery,
+  useGetAllPaymentsForUserIdQuery,
+  useCreatePaymentMutation,
+  useUpdatePaymentStatusMutation,
+} = paymentsApi;
 

@@ -37,6 +37,10 @@ export const userApi = createApi({
             query:() => 'users',
             providesTags:['users']
         }),
+        getUserById:builder.query({
+            query:(userId) => `users/${userId}`,
+            providesTags:['user']
+        }),
         updateUserProfile: builder.mutation({
         query: ({ userId, ...patch }) => ({
             url: `users/${userId}`,
@@ -44,6 +48,33 @@ export const userApi = createApi({
             body: patch,
         }),
         invalidatesTags: ["user", "users"]
+        }),
+        changePassword: builder.mutation({
+            query: ({ userId, currentPassword, newPassword }) => ({
+                url: `users/${userId}/change-password`,
+                method: 'PATCH',
+                body: { currentPassword, newPassword },
+            }),
+        }),
+        updateProfilePicture: builder.mutation({
+            query: ({ userId, profilePictureUrl, profilePicture }) => {
+                console.log("updateProfilePicture API payload:", { 
+                    userId, 
+                    profilePictureUrl, 
+                    profilePicture 
+                });
+                
+                return {
+                    url: `users/${userId}/profile-picture`,
+                    method: 'PATCH',
+                    body: { 
+                        profilePictureUrl: profilePictureUrl || profilePicture,
+                        profilePicture: profilePicture || profilePictureUrl,
+                        // Send both to handle different backend expectations
+                    },
+                };
+            },
+            invalidatesTags: ["user", "users"]
         }),
         deleteUser:builder.mutation({
             query:(userId) =>({
@@ -54,3 +85,14 @@ export const userApi = createApi({
         })
     })
 })
+
+export const {
+    useRegisterUserMutation,
+    useLoginUserMutation,
+    useGetAllUserProfilesQuery,
+    useGetUserByIdQuery,
+    useUpdateUserProfileMutation,
+    useChangePasswordMutation,
+    useUpdateProfilePictureMutation,
+    useDeleteUserMutation
+} = userApi;

@@ -48,6 +48,39 @@ export const supportTicketApi = createApi({
                 method:'DELETE',
             }),
             invalidatesTags:['supportTickets']
+        }),
+        
+        // Add response to a support ticket
+        addSupportTicketResponse:builder.mutation({
+            query:({ticketId, ...responsePayload})=>({
+                url:`tickets/${ticketId}/responses`,
+                method:'POST',
+                body:responsePayload
+            }),
+            invalidatesTags:['supportTickets']
+        }),
+        
+        // Get all responses for a specific ticket
+        getSupportTicketResponses:builder.query({
+            query:(ticketId) => `tickets/${ticketId}/responses`,
+            providesTags:['supportTickets']
+        }),
+        
+        // Get a specific ticket with all its responses
+        getSupportTicketWithResponses:builder.query({
+            query:(ticketId) => `tickets/${ticketId}/with-responses`,
+            providesTags:['supportTickets']
         })
     })
 })
+
+export const {
+    useRegisterSupportTicketMutation,
+    useUpdateSupportTicketMutation,
+    useGetAllSupportTicketsQuery,
+    useGetSupportTicketsByUserIdQuery,
+    useDeleteSupportTicketMutation,
+    useAddSupportTicketResponseMutation,
+    useGetSupportTicketResponsesQuery,
+    useGetSupportTicketWithResponsesQuery
+} = supportTicketApi;

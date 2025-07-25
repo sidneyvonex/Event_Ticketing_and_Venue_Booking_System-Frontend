@@ -71,32 +71,53 @@ export interface UserLoginInputs{
     }
   }
 
- export  interface PaymentDataTypes{
-  paymentId:number,
-  bookingId:number,
-  amount:number,
-  paymentStatus:string,
-  paymentDate:string,
-  paymentMethod:string,
-  transactionId:string,
-  createdAt:string,
-  updatedAt:string,
-  booking:{
-    userId:number,
-    eventId:number,
-    bookingStatus:string,
-    quantity:number,
-    totalAmount:number,
-    event:{
-      eventTitle:string,
-      eventDate:string,
-      eventTime:string,
-      venue:{
-        venueName:string,
-      }
-    }
-
-  },
+ export interface PaymentDataTypes{
+  paymentId: number;
+  userId?: number;
+  bookingId: number;
+  amount: string; // API returns as string like '300.00'
+  paymentMethod: string;
+  paymentStatus: "Pending" | "Completed" | "Failed" | "Refunded";
+  paymentDate: string;
+  transactionId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // Note: booking, user, event details are not included in current API response
+  booking?: {
+    bookingId: number;
+    userId: number;
+    eventId: number;
+    quantity: number;
+    totalAmount: number;
+    bookingStatus: string;
+    createdAt: string;
+    user: {
+      userId: number;
+      firstName: string;
+      lastName: string;
+      email: string;
+      contactPhone: string;
+      profilePicture: string;
+    };
+    event: {
+      eventId: number;
+      eventTitle: string;
+      description: string;
+      eventImageUrl: string;
+      category: string;
+      eventDate: string;
+      eventTime: string;
+      ticketPrice: number;
+      ticketsTotal: number;
+      ticketsSold: number;
+      venue: {
+        venueId: number;
+        venueName: string;
+        venueAddress: string;
+        venueCapacity: number;
+      };
+    };
+  };
  }
 
  export interface SupportTicketDataTypes{
@@ -112,6 +133,22 @@ export interface UserLoginInputs{
     firstName:string,
     lastName:string,
     email:string,
+  },
+  responses?: SupportTicketResponseTypes[]
+ }
+
+ export interface SupportTicketResponseTypes{
+  responseId: number,
+  ticketId: number,
+  responderId: number,
+  responderType: 'user' | 'admin',
+  message: string,
+  createdAt: string,
+  responder: {
+    firstName: string,
+    lastName: string,
+    email: string,
+    role?: string
   }
  }
 

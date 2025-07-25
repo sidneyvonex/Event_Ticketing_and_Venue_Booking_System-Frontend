@@ -8,7 +8,6 @@ import {
   CreditCard,
   Users,
   MapPin,
-  TrendingUp,
   BarChart3,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -108,13 +107,7 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
           active={isActive("/admindashboard/reports")}
           collapsed={collapsed}
         />
-        <NavItem
-          to="/admindashboard/analytics"
-          icon={<TrendingUp size={20} />}
-          label="Analytics"
-          active={isActive("/admindashboard/analytics")}
-          collapsed={collapsed}
-        />
+
       </nav>
 
       <div className="pt-4 border-t border-white/10 space-y-2">

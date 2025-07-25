@@ -10,6 +10,7 @@ import { bookingsApi } from "../api/BookingsApi";
 import { supportTicketApi } from "../api/SupportTicketApi";
 import { venueApi } from "../api/VenueApi";
 import { paymentsApi } from "../api/PaymentsApi";
+import { uploadApi } from "../api/uploadApi";
 
 const authPersistConfig ={
     key:'auth',
@@ -30,6 +31,7 @@ export const store = configureStore({
         [supportTicketApi.reducerPath]:supportTicketApi.reducer,
         [venueApi.reducerPath]:venueApi.reducer,
         [paymentsApi.reducerPath]:paymentsApi.reducer,
+        [uploadApi.reducerPath]:uploadApi.reducer,
 
         //Persist reducer
 
@@ -38,7 +40,7 @@ export const store = configureStore({
     middleware:(getDefaultMiddleware)=>
         getDefaultMiddleware({
             serializableCheck:false,
-        }).concat(userApi.middleware,eventApi.middleware,bookingsApi.middleware,venueApi.middleware,supportTicketApi.middleware,paymentsApi.middleware)
+        }).concat(userApi.middleware,eventApi.middleware,bookingsApi.middleware,venueApi.middleware,supportTicketApi.middleware,paymentsApi.middleware,uploadApi.middleware)
 })
 
 //Export Persist Store

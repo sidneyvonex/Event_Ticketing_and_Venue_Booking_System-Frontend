@@ -49,3 +49,9 @@ export const venueApi = createApi({
   }),
 });
 
+export const {
+  useCreateVenueMutation,
+  useGetAllVenuesQuery,
+  useUpdateVenueMutation,
+  useDeleteVenueMutation,
+} = venueApi;

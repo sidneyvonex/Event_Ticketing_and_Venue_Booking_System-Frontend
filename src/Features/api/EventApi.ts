@@ -1,3 +1,4 @@
+ 
 import { createApi,fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "../app/store";
 
@@ -27,19 +28,25 @@ export const eventApi = createApi({
             providesTags: ['events']
         }),
         createEvent: builder.mutation({
-            query: (createEventPayload) => ({
-                url: 'events',
-                method: 'POST',
-                body: createEventPayload,
-            }),
+            query: (createEventPayload) => {
+                console.log("🚀 EventAPI - Sending create event payload:", createEventPayload);
+                return {
+                    url: 'events',
+                    method: 'POST',
+                    body: createEventPayload,
+                };
+            },
             invalidatesTags: ['events']
         }),
         updateEvent: builder.mutation({
-            query: ({ eventId, ...eventDataPayload }) => ({
-                url: `events/${eventId}`,
-                method: 'PUT',
-                body: eventDataPayload,
-            }),
+            query: ({ eventId, ...eventDataPayload }) => {
+                console.log("🚀 EventAPI - Sending update event payload:", { eventId, eventDataPayload });
+                return {
+                    url: `events/${eventId}`,
+                    method: 'PUT',
+                    body: eventDataPayload,
+                };
+            },
             invalidatesTags: ['events']
         }),
         deleteEvent: builder.mutation({

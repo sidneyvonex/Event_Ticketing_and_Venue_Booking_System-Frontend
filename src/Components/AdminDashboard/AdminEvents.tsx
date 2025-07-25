@@ -19,6 +19,9 @@ import {
   Upload,
 } from "lucide-react";
 import { eventApi } from "../../Features/api/EventApi";
+import { venueApi } from "../../Features/api/VenueApi";
+import { useUploadImageMutation } from "../../Features/api/uploadApi";
+import { validateImage } from "../../utils/imageUploadUtils";
 import type { EventsDataTypes } from "../../types/types";
 import { toast, Toaster } from "sonner";
 import { PuffLoader } from "react-spinners";
@@ -39,6 +42,11 @@ export const AdminEvents = () => {
   const [imagePreview, setImagePreview] = useState<string>("");
   const [isImageUploading, setIsImageUploading] = useState(false);
 
+  // Cloudinary upload mutation
+  const [uploadImage] = useUploadImageMutation();
+
+  // Form data for create/editIsImageUploading] = useState(false);
+
   // Form data for create/edit
   const [formData, setFormData] = useState({
     eventTitle: "",
@@ -49,7 +57,7 @@ export const AdminEvents = () => {
     ticketPrice: "",
     ticketsTotal: "",
     eventImageUrl: "",
-    venueId: 1, // You'll need to fetch venues and let admin select
+    venueId: "",
   });
 
   // Fetch data
@@ -58,6 +66,13 @@ export const AdminEvents = () => {
     isLoading: eventsLoading,
     error: eventsError,
   } = eventApi.useGetAllEventsQuery({});
+
+  // Fetch venues data
+  const {
+    data: venues = [],
+    isLoading: venuesLoading,
+    error: venuesError,
+  } = venueApi.useGetAllVenuesQuery({});
 
   const [createEvent, { isLoading: isCreating }] =
     eventApi.useCreateEventMutation();
@@ -124,57 +139,82 @@ export const AdminEvents = () => {
     startIndex + itemsPerPage
   );
 
-  // Helper functions
-  const formatCurrency = (amount: string) => {
-    return `Ksh ${parseFloat(amount || "0").toLocaleString()}`;
+  // Handle form input changes
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Auto-fill tickets total when venue is selected
+    if (name === "venueId" && value) {
+      const selectedVenue = venues.find(
+        (venue: any) => venue.venueId.toString() === value
+      );
+      if (selectedVenue) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          ticketsTotal: selectedVenue.venueCapacity.toString(),
+        }));
+        console.log(
+          `✅ Auto-filled tickets total: ${selectedVenue.venueCapacity} for venue: ${selectedVenue.venueName}`
+        );
+      }
+    }
   };
-
-  // Image upload handler
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please select a valid image file", {
-          position: "top-right",
-        });
-        return;
-      }
+    if (!file) return;
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image size should be less than 5MB", {
-          position: "top-right",
-        });
-        return;
-      }
+    // Validate image using utility function
+    const validation = validateImage(file, 10); // 10MB max for events
+    if (!validation.isValid) {
+      toast.error(validation.error!);
+      return;
+    }
 
-      setIsImageUploading(true);
+    setIsImageUploading(true);
 
-      // Create a preview URL
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setImagePreview(result);
-        setFormData({ ...formData, eventImageUrl: result });
-        setIsImageUploading(false);
+    try {
+      // Upload to Cloudinary
+      const result = await uploadImage({
+        file,
+        context: "event-images",
+        quality: 0.85,
+        maxWidth: 1200,
+        maxHeight: 800,
+      }).unwrap();
 
-        toast.success("Image uploaded successfully!", {
-          position: "top-right",
-        });
-      };
+      // Update form data and preview with Cloudinary URL
+      setImagePreview(result.secure_url);
+      setFormData((prev) => {
+        const updatedFormData = {
+          ...prev,
+          eventImageUrl: result.secure_url,
+        };
+        console.log("Updated Form Data:", updatedFormData);
+        return updatedFormData;
+      });
 
-      reader.onerror = () => {
-        setIsImageUploading(false);
-        toast.error("Failed to upload image", {
-          position: "top-right",
-        });
-      };
-
-      reader.readAsDataURL(file);
+      toast.success("Event image uploaded successfully!");
+    } catch (error: any) {
+      console.error("Error uploading image:", error);
+      toast.error("Failed to upload image. Please try again.");
+    } finally {
+      setIsImageUploading(false);
     }
   };
 
+  // Format date and time for display
   const formatDateTime = (eventDate: string, eventTime: string) => {
     const datePart = new Date(eventDate).toISOString().split("T")[0];
     const combined = new Date(`${datePart}T${eventTime}`);
@@ -187,6 +227,15 @@ export const AdminEvents = () => {
       minute: "2-digit",
       hour12: true,
     });
+  };
+
+  // Format currency for display
+  const formatCurrency = (amount: number | string) => {
+    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(numAmount);
   };
 
   // Modal handlers
@@ -210,8 +259,9 @@ export const AdminEvents = () => {
       ticketPrice: "",
       ticketsTotal: "",
       eventImageUrl: "",
-      venueId: 1,
+      venueId: "",
     });
+    setImagePreview("");
     setIsCreateModalOpen(true);
   };
 
@@ -227,7 +277,7 @@ export const AdminEvents = () => {
       ticketPrice: "",
       ticketsTotal: "",
       eventImageUrl: "",
-      venueId: 1,
+      venueId: "",
     });
   };
 
@@ -238,12 +288,12 @@ export const AdminEvents = () => {
       eventTitle: event.eventTitle,
       description: event.description,
       category: event.category,
-      eventDate: event.eventDate.split("T")[0], // Format for input[type="date"]
+      eventDate: event.eventDate.split("T")[0],
       eventTime: event.eventTime,
       ticketPrice: event.ticketPrice,
       ticketsTotal: event.venue?.venueCapacity?.toString() || "",
       eventImageUrl: event.eventImageUrl,
-      venueId: event.venue?.venueId || 1,
+      venueId: event.venue?.venueId?.toString() || "",
     });
     setIsEditModalOpen(true);
   };
@@ -261,12 +311,46 @@ export const AdminEvents = () => {
       ticketPrice: "",
       ticketsTotal: "",
       eventImageUrl: "",
-      venueId: 1,
+      venueId: "",
     });
   };
 
   // CRUD operations
   const handleCreateEvent = async () => {
+    // Validate required fields
+    if (!formData.eventTitle.trim()) {
+      toast.error("Event title is required!");
+      return;
+    }
+    if (!formData.description.trim()) {
+      toast.error("Event description is required!");
+      return;
+    }
+    if (!formData.category) {
+      toast.error("Event category is required!");
+      return;
+    }
+    if (!formData.eventDate) {
+      toast.error("Event date is required!");
+      return;
+    }
+    if (!formData.eventTime) {
+      toast.error("Event time is required!");
+      return;
+    }
+    if (!formData.ticketPrice || parseFloat(formData.ticketPrice) <= 0) {
+      toast.error("Valid ticket price is required!");
+      return;
+    }
+    if (!formData.venueId) {
+      toast.error("Please select a venue!");
+      return;
+    }
+    if (!formData.ticketsTotal || parseInt(formData.ticketsTotal) <= 0) {
+      toast.error("Valid ticket capacity is required!");
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Create New Event?",
       text: "Are you sure you want to create this event?",
@@ -280,12 +364,37 @@ export const AdminEvents = () => {
 
     if (result.isConfirmed) {
       try {
-        await createEvent({
-          ...formData,
+        // Validation
+        if (!formData.eventImageUrl || formData.eventImageUrl.trim() === "") {
+          await Swal.fire({
+            title: "Missing Image!",
+            text: "Please upload an event image before creating the event.",
+            icon: "warning",
+            confirmButtonColor: "#2563eb",
+          });
+          return;
+        }
+
+        const eventData = {
+          eventTitle: formData.eventTitle,
+          description: formData.description,
+          category: formData.category,
+          eventDate: formData.eventDate,
+          eventTime: formData.eventTime,
           ticketPrice: parseFloat(formData.ticketPrice),
           ticketsTotal: parseInt(formData.ticketsTotal),
-          ticketsSold: 0, // New events start with 0 sold
-        }).unwrap();
+          venueId: parseInt(formData.venueId),
+          eventImageUrl: formData.eventImageUrl, // Backend expects this field name
+          ticketsSold: 0,
+        };
+
+        console.log("=== CREATING EVENT ===");
+        console.log("Event Data being sent:", eventData);
+        console.log("Image URL:", formData.eventImageUrl);
+
+        await createEvent(eventData).unwrap();
+
+        console.log("✅ Event created successfully!");
 
         await Swal.fire({
           title: "Success!",
@@ -296,10 +405,16 @@ export const AdminEvents = () => {
 
         closeCreateModal();
       } catch (error: any) {
-        console.error("Create event error:", error);
+        console.error("❌ Create event error:", error);
+        console.error("❌ Error response:", error?.data);
+        console.error("❌ Error status:", error?.status);
+
         await Swal.fire({
           title: "Error!",
-          text: "Failed to create event. Please try again.",
+          text:
+            error?.data?.error ||
+            error?.data?.message ||
+            "Failed to create event. Please try again.",
           icon: "error",
           confirmButtonColor: "#2563eb",
         });
@@ -323,12 +438,37 @@ export const AdminEvents = () => {
 
     if (result.isConfirmed) {
       try {
-        await updateEvent({
+        // Validation
+        if (!formData.eventImageUrl || formData.eventImageUrl.trim() === "") {
+          await Swal.fire({
+            title: "Missing Image!",
+            text: "Please upload an event image before updating the event.",
+            icon: "warning",
+            confirmButtonColor: "#2563eb",
+          });
+          return;
+        }
+
+        const updateData = {
           eventId: selectedEvent.eventId,
-          ...formData,
+          eventTitle: formData.eventTitle,
+          description: formData.description,
+          category: formData.category,
+          eventDate: formData.eventDate,
+          eventTime: formData.eventTime,
           ticketPrice: parseFloat(formData.ticketPrice),
           ticketsTotal: parseInt(formData.ticketsTotal),
-        }).unwrap();
+          venueId: parseInt(formData.venueId),
+          eventImageUrl: formData.eventImageUrl, // Backend expects this field name
+        };
+
+        console.log("=== UPDATING EVENT ===");
+        console.log("Update Data being sent:", updateData);
+        console.log("Image URL:", formData.eventImageUrl);
+
+        await updateEvent(updateData).unwrap();
+
+        console.log("✅ Event updated successfully!");
 
         await Swal.fire({
           title: "Success!",
@@ -339,10 +479,16 @@ export const AdminEvents = () => {
 
         closeEditModal();
       } catch (error: any) {
-        console.error("Update event error:", error);
+        console.error("❌ Update event error:", error);
+        console.error("❌ Error response:", error?.data);
+        console.error("❌ Error status:", error?.status);
+
         await Swal.fire({
           title: "Error!",
-          text: "Failed to update event. Please try again.",
+          text:
+            error?.data?.error ||
+            error?.data?.message ||
+            "Failed to update event. Please try again.",
           icon: "error",
           confirmButtonColor: "#2563eb",
         });
@@ -384,26 +530,29 @@ export const AdminEvents = () => {
     }
   };
 
-  if (eventsLoading) {
+  if (eventsLoading || venuesLoading) {
     return (
       <div className="p-6">
         <div className="flex justify-center items-center h-48">
           <PuffLoader size={60} color="#0f172a" />
+          <span className="ml-3 text-gray-600">
+            Loading events and venues...
+          </span>
         </div>
       </div>
     );
   }
 
-  if (eventsError) {
+  if (eventsError || venuesError) {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center gap-2 text-red-800">
             <X size={20} />
-            <span className="font-medium">Error loading events</span>
+            <span className="font-medium">Error loading data</span>
           </div>
           <p className="text-red-600 text-sm mt-1">
-            Failed to fetch events data. Please try again.
+            Failed to fetch data. Please try again.
           </p>
         </div>
       </div>
@@ -1082,15 +1231,11 @@ export const AdminEvents = () => {
                       </label>
                       <input
                         type="number"
+                        name="ticketPrice"
                         min="0"
                         step="0.01"
                         value={formData.ticketPrice}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            ticketPrice: e.target.value,
-                          })
-                        }
+                        onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="0.00"
                         disabled={isCreating}
@@ -1099,23 +1244,58 @@ export const AdminEvents = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Venue Capacity *
+                        Ticket Capacity *
                       </label>
                       <input
                         type="number"
+                        name="ticketsTotal"
                         min="1"
                         value={formData.ticketsTotal}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            ticketsTotal: e.target.value,
-                          })
-                        }
+                        onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="100"
+                        placeholder="Auto-filled from venue capacity"
                         disabled={isCreating}
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Venue Selection */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                    <MapPin size={18} />
+                    Venue
+                  </h3>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Venue *
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="venueId"
+                        value={formData.venueId}
+                        onChange={handleInputChange}
+                        className="appearance-none w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={isCreating || venuesLoading}
+                      >
+                        <option value="">Select a venue</option>
+                        {venues.map((venue: any) => (
+                          <option key={venue.venueId} value={venue.venueId}>
+                            {venue.venueName} - Capacity: {venue.venueCapacity}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        size={16}
+                      />
+                    </div>
+                    {venuesLoading && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Loading venues...
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1141,7 +1321,8 @@ export const AdminEvents = () => {
                   !formData.eventDate ||
                   !formData.eventTime ||
                   !formData.ticketPrice ||
-                  !formData.ticketsTotal
+                  !formData.ticketsTotal ||
+                  !formData.venueId
                 }
               >
                 {isCreating ? (
@@ -1456,7 +1637,8 @@ export const AdminEvents = () => {
                   !formData.eventDate ||
                   !formData.eventTime ||
                   !formData.ticketPrice ||
-                  !formData.ticketsTotal
+                  !formData.ticketsTotal ||
+                  !formData.venueId
                 }
               >
                 {isUpdating ? (
