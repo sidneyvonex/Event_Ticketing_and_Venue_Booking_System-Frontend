@@ -6,7 +6,6 @@ export interface AuthState{
     token:string | null,
     isAuthenticated:boolean,
     userRole:null | string,
-    profileUrl:null | string,
 }
 
 export interface UserLoginInputs{
