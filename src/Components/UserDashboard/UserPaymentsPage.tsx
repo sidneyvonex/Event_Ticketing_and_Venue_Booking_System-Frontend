@@ -4,12 +4,7 @@ import type { RootState } from "../../Features/app/store";
 import { paymentsApi } from "../../Features/api/PaymentsApi";
 import type { PaymentDataTypes } from "../../types/types";
 import { PuffLoader } from "react-spinners";
-import {
-  CircleCheckBig,
-  Clock,
-  DollarSign,
-  RotateCcw,
-} from "lucide-react";
+import { CircleCheckBig, Clock, DollarSign, RotateCcw } from "lucide-react";
 
 // PDF generation function
 const generatePaymentPDF = (payment: PaymentDataTypes) => {
@@ -20,7 +15,7 @@ const generatePaymentPDF = (payment: PaymentDataTypes) => {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Payment Receipt - #${payment.paymentId}</title>
+      <title>Payment Receipt - #${payment.paymentId || ""}</title>
       <style>
         body { 
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -139,71 +134,90 @@ const generatePaymentPDF = (payment: PaymentDataTypes) => {
       <div class="receipt-info">
         <div class="info-row">
           <span class="label">Receipt #:</span>
-          <span class="value">${payment.paymentId
-            .toString()
-            .padStart(6, "0")}</span>
+          <span class="value">${
+            payment.paymentId
+              ? payment.paymentId.toString().padStart(6, "0")
+              : "N/A"
+          }</span>
         </div>
         <div class="info-row">
           <span class="label">Transaction ID:</span>
-          <span class="value">${payment.transactionId}</span>
+          <span class="value">${payment.transactionId || "N/A"}</span>
         </div>
         <div class="info-row">
           <span class="label">Payment Date:</span>
-          <span class="value">${new Date(
+          <span class="value">${
             payment.paymentDate
-          ).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}</span>
+              ? new Date(payment.paymentDate).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "N/A"
+          }</span>
         </div>
         <div class="info-row">
           <span class="label">Payment Method:</span>
-          <span class="value">${payment.paymentMethod}</span>
+          <span class="value">${payment.paymentMethod || "N/A"}</span>
         </div>
         <div class="info-row">
           <span class="label">Status:</span>
           <span class="value">
-            <span class="status ${payment.paymentStatus.toLowerCase()}">${
-    payment.paymentStatus
-  }</span>
+            <span class="status ${
+              payment.paymentStatus ? payment.paymentStatus.toLowerCase() : ""
+            }">${payment.paymentStatus || "N/A"}</span>
           </span>
         </div>
       </div>
 
       <div class="amount">
-        Total: KSh ${payment.amount.toLocaleString()}
+        Total: KSh ${
+          !isNaN(Number(payment.amount))
+            ? Number(payment.amount).toLocaleString()
+            : "N/A"
+        }
       </div>
 
       <div class="receipt-info event-section">
         <h3>Event Details</h3>
         <div class="info-row">
           <span class="label">Event:</span>
-          <span class="value">${payment.booking.event.eventTitle}</span>
+          <span class="value">${
+            payment?.booking?.event?.eventTitle || "N/A"
+          }</span>
         </div>
         <div class="info-row">
           <span class="label">Venue:</span>
-          <span class="value">${payment.booking.event.venue.venueName}</span>
+          <span class="value">${
+            payment?.booking?.event?.venue?.venueName || "N/A"
+          }</span>
         </div>
         <div class="info-row">
           <span class="label">Event Date:</span>
-          <span class="value">${new Date(
-            payment.booking.event.eventDate
-          ).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })}</span>
+          <span class="value">${
+            payment?.booking?.event?.eventDate
+              ? new Date(payment.booking.event.eventDate).toLocaleDateString(
+                  "en-US",
+                  {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  }
+                )
+              : "N/A"
+          }</span>
         </div>
         <div class="info-row">
           <span class="label">Tickets:</span>
-          <span class="value">${payment.booking.quantity} ticket(s)</span>
+          <span class="value">${
+            payment?.booking?.quantity || "N/A"
+          } ticket(s)</span>
         </div>
         <div class="info-row">
           <span class="label">Booking ID:</span>
-          <span class="value">#${payment.bookingId}</span>
+          <span class="value">#${payment?.bookingId || "N/A"}</span>
         </div>
       </div>
 
@@ -436,24 +450,29 @@ export const UserPaymentsPage = () => {
                     <td>
                       <div className="space-y-1">
                         <div className="font-semibold text-xs">
-                          {payment.booking.event.eventTitle}
+                          {payment.booking?.event?.eventTitle || "N/A"}
                         </div>
                         <div className="text-xs text-base-content/70">
-                          {payment.booking.event.venue.venueName} •{" "}
-                          {payment.booking.quantity} ticket(s)
+                          {payment.booking?.event?.venue?.venueName || "N/A"} •{" "}
+                          {payment.booking?.quantity || "N/A"} ticket(s)
                         </div>
                         <div className="text-xs text-base-content/70">
                           Event:{" "}
-                          {new Date(
-                            payment.booking.event.eventDate
-                          ).toLocaleDateString()}
+                          {payment.booking?.event?.eventDate
+                            ? new Date(
+                                payment.booking.event.eventDate
+                              ).toLocaleDateString()
+                            : "N/A"}
                         </div>
                       </div>
                     </td>
 
                     <td>
                       <div className="font-semibold text-sm">
-                        KSh {payment.amount.toLocaleString()}
+                        KSh{" "}
+                        {!isNaN(Number(payment.amount))
+                          ? Number(payment.amount).toLocaleString()
+                          : "N/A"}
                       </div>
                     </td>
 
