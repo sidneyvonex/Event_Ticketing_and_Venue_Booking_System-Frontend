@@ -4,7 +4,7 @@ import HeroImg from "../../assets/Hero.jpeg";
 import { useState } from "react";
 import { CheckCircle, Eye, EyeOff, UserPlus, XCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
-import {Toaster,toast} from "sonner"
+import { Toaster, toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { userApi } from "../../Features/api/userApi";
 
@@ -20,7 +20,7 @@ interface UserInputs {
 
 export const RegisterForm = () => {
   const [showConfirm, setShowConfirm] = useState(false);
-  
+
   const {
     register,
     handleSubmit,
@@ -41,38 +41,40 @@ export const RegisterForm = () => {
 
   const strength = getPasswordStrength(password);
 
-//Navigation 
+  //Navigation
   const navigate = useNavigate();
 
+  // User Api Logic
 
-    // User Api Logic 
-
-  const [registerUser,{isLoading}]= userApi.useRegisterUserMutation()
+  const [registerUser, { isLoading }] = userApi.useRegisterUserMutation();
 
   const formSubmit = async (data: UserInputs) => {
-    const loadingToastId =toast.loading('Creating Account')
-    try{
-      const res =  await registerUser(data).unwrap()
+    const loadingToastId = toast.loading("Creating Account");
+    try {
+      const res = await registerUser(data).unwrap();
 
-      console.log("🌟 ~ formSubmit ~ res:", res)
+      console.log("🌟 ~ formSubmit ~ res:", res);
 
       toast.success(res.message, {
         id: loadingToastId,
         icon: <CheckCircle className="text-green-500 w-5 h-5" />,
       });
-      navigate('/login')
-
-    }catch(error:any){
-      console.log("🌟 Failed to Register:", error)
-      toast.error('Failed to register:  ' + (error.data?.error),{
-        icon:<XCircle className="text-red-500 w-5 h-5" />
-      })
-      toast.dismiss(loadingToastId)
+      navigate("/login");
+    } catch (error: any) {
+      console.log("🌟 Failed to Register:", error);
+      toast.error(
+        "Failed to register:  " +
+          (error?.data?.error ||
+            error?.data?.message ||
+            error?.message ||
+            "Unknown error"),
+        {
+          icon: <XCircle className="text-red-500 w-5 h-5" />,
+        }
+      );
+      toast.dismiss(loadingToastId);
     }
   };
-
-
-
 
   return (
     <div
@@ -152,7 +154,10 @@ export const RegisterForm = () => {
                 className="input input-bordered w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093FB4]"
                 {...register("email", {
                   required: "Email is required",
-                  pattern: { value: /^\S+@\S+$/, message: "Invalid email address" },
+                  pattern: {
+                    value: /^\S+@\S+$/,
+                    message: "Invalid email address",
+                  },
                 })}
               />
               {errors.email && (

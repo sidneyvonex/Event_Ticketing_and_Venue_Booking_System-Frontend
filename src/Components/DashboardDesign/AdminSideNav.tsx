@@ -101,13 +101,19 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
           collapsed={collapsed}
         />
         <NavItem
+          to="/admindashboard/users"
+          icon={<Users size={20} />}
+          label="All Users"
+          active={isActive("/admindashboard/users")}
+          collapsed={collapsed}
+        />
+        <NavItem
           to="/admindashboard/reports"
           icon={<BarChart3 size={20} />}
           label="Sales Reports"
           active={isActive("/admindashboard/reports")}
           collapsed={collapsed}
         />
-
       </nav>
 
       <div className="pt-4 border-t border-white/10 space-y-2">

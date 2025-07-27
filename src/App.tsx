@@ -26,7 +26,9 @@ import { AllSupportTickets } from "./Components/AdminDashboard/AllSupportTickets
 import { AdminProfile } from "./Components/AdminDashboard/AdminProfile";
 import { RoleBasedRedirect } from "./Components/Home/RoleBasedRedirect";
 import { AdminEvents } from "./Components/AdminDashboard/AdminEvents";
+
 import SalesReport from "./Components/AdminDashboard/SalesReport";
+import { AllUsers } from "./Components/AdminDashboard/AllUsers";
 
 function App() {
   const router = createBrowserRouter([
@@ -148,7 +150,7 @@ function App() {
           children: [
             {
               index: true,
-              element: <AdminEvents/>,
+              element: <AdminEvents />,
             },
             {
               path: ":eventId",
@@ -162,7 +164,11 @@ function App() {
         },
         {
           path: "reports",
-          element:<SalesReport/>
+          element: <SalesReport />,
+        },
+        {
+          path: "users",
+          element: <AllUsers />,
         },
         {
           path: "settings",

@@ -26,6 +26,14 @@ export const userApi = createApi({
                 body:registerPayload
             }),
         }),
+        adminCreateUser: builder.mutation({
+            query: (userPayload) => ({
+                url: 'auth/admin/create-user',
+                method: 'POST',
+                body: userPayload,
+            }),
+            invalidatesTags: ['users']
+        }),
         loginUser:builder.mutation({
             query:(loginPayload) =>({
                 url:'auth/login',
@@ -59,12 +67,6 @@ export const userApi = createApi({
         }),
         updateProfilePicture: builder.mutation({
             query: ({ userId, profilePictureUrl, profilePicture }) => {
-                console.log("updateProfilePicture API payload:", { 
-                    userId, 
-                    profilePictureUrl, 
-                    profilePicture 
-                });
-                
                 return {
                     url: `users/${userId}/profile-picture`,
                     method: 'PATCH',
@@ -82,6 +84,8 @@ export const userApi = createApi({
                 url: 'auth/forgot-password',
                 method: 'POST',
                 body: { email },
+                // Remove Authorization header for this endpoint
+                headers: { 'Content-Type': 'application/json' },
             }),
         }),
         deleteUser:builder.mutation({
@@ -103,5 +107,6 @@ export const {
     useChangePasswordMutation,
     useUpdateProfilePictureMutation,
     useDeleteUserMutation,
-    useForgotPasswordMutation
+    useForgotPasswordMutation,
+    useAdminCreateUserMutation
 } = userApi;
