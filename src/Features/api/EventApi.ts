@@ -30,7 +30,6 @@ export const eventApi = createApi({
         }),
         createEvent: builder.mutation({
             query: (createEventPayload) => {
-                console.log("🚀 EventAPI - Sending create event payload:", createEventPayload);
                 return {
                     url: 'events',
                     method: 'POST',
@@ -41,7 +40,6 @@ export const eventApi = createApi({
         }),
         updateEvent: builder.mutation({
             query: ({ eventId, ...eventDataPayload }) => {
-                console.log("🚀 EventAPI - Sending update event payload:", { eventId, eventDataPayload });
                 return {
                     url: `events/${eventId}`,
                     method: 'PUT',
