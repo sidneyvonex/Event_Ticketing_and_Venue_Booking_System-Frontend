@@ -1,3 +1,4 @@
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useSelector } from "react-redux";
@@ -5,7 +6,7 @@ import type { RootState } from "../../Features/app/store";
 import { supportTicketApi } from "../../Features/api/SupportTicketApi";
 import type { SupportTicketDataTypes } from "../../types/types";
 import { PuffLoader } from "react-spinners";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 import {
   MdSupport,
   MdAdd,
@@ -17,8 +18,58 @@ import {
   MdClose,
   MdHourglassEmpty,
 } from "react-icons/md";
+import {
+  useGetSupportTicketWithResponsesQuery,
+  useAddSupportTicketResponseMutation,
+} from "../../Features/api/SupportTicketApi";
 
 export const UserSupport = () => {
+  // Unread message helpers (for user view)
+  // Returns true if the last response is from admin and is unread by the user
+  const hasUnreadAdminMessage = (ticket: SupportTicketDataTypes) => {
+    if (!ticket.responses || ticket.responses.length === 0) return false;
+    // Find the last admin response
+    const sorted = [...ticket.responses].sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    // Find the last admin response
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      if (sorted[i].responderType === "admin") {
+        // If the response is not marked as read by the user, return true
+        // For now, assume unread if there's an admin response after the user's last response
+        // (You can replace this logic with a real 'read' flag if your backend supports it)
+        const lastUserResponseIndex = sorted.findIndex(
+          (r) =>
+            r.responderType === "user" &&
+            new Date(r.createdAt) > new Date(sorted[i].createdAt)
+        );
+        return lastUserResponseIndex === -1;
+      }
+    }
+    return false;
+  };
+
+  // Count unread admin messages (for badge)
+  const getUnreadAdminMessageCount = (ticket: SupportTicketDataTypes) => {
+    if (!ticket.responses || ticket.responses.length === 0) return 0;
+    // Count admin responses after the user's last response
+    const sorted = [...ticket.responses].sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    let lastUserIndex = -1;
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      if (sorted[i].responderType === "user") {
+        lastUserIndex = i;
+        break;
+      }
+    }
+    // All admin responses after lastUserIndex are unread
+    return sorted
+      .slice(lastUserIndex + 1)
+      .filter((r) => r.responderType === "admin").length;
+  };
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.userId;
 
@@ -33,12 +84,15 @@ export const UserSupport = () => {
 
   // Create support ticket mutation
   const [createSupport, { isLoading: isCreating }] =
-    supportTicketApi.useRegisterSupportTicketMutation();
+    supportTicketApi.useCreateSupportTicketMutation();
 
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterCategory, setFilterCategory] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedTicket, setSelectedTicket] =
+    useState<SupportTicketDataTypes | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form state for creating tickets
   const [formData, setFormData] = useState({
@@ -94,8 +148,6 @@ export const UserSupport = () => {
         userId: userId,
         supportTicketStatus: "Open", // Required by backend
       };
-
-      console.log("Creating ticket with data:", ticketData);
 
       await createSupport(ticketData).unwrap();
 
@@ -164,8 +216,195 @@ export const UserSupport = () => {
     }
   };
 
+  // Ticket Details Modal Component
+  const TicketDetailsModal = ({
+    ticket,
+    user,
+    onClose,
+  }: {
+    ticket: SupportTicketDataTypes;
+    user: any;
+    onClose: () => void;
+  }) => {
+    const { data, isLoading, refetch } = useGetSupportTicketWithResponsesQuery(
+      ticket.ticketId
+    );
+    const [addResponse, { isLoading: isReplying }] =
+      useAddSupportTicketResponseMutation();
+    const [reply, setReply] = useState("");
+    // Only allow reply if ticket is not closed or resolved
+    const canReply =
+      ticket.supportTicketStatus !== "Closed" &&
+      ticket.supportTicketStatus !== "Resolved";
+
+    const formatDate = (dateString: string) => {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
+
+    const handleReply = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!reply.trim()) return;
+      await addResponse({
+        ticketId: ticket.ticketId,
+        responderId: user.userId,
+        responderType: "user",
+        message: reply.trim(),
+      });
+      setReply("");
+      refetch();
+    };
+
+    return (
+      <div className="modal modal-open">
+        <div className="modal-box w-full max-w-lg sm:max-w-2xl bg-base-100 border border-base-300 shadow-2xl">
+          <div className="flex items-center justify-between mb-4 border-b border-base-300 pb-2">
+            <div className="flex items-center gap-2">
+              <MdSupport className="text-primary w-6 h-6" />
+              <h3 className="font-bold text-lg">Ticket #{ticket.ticketId}</h3>
+            </div>
+            <button
+              className="btn btn-sm btn-circle btn-ghost"
+              onClick={onClose}
+            >
+              <MdClose className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="mb-2">
+            <div className="font-semibold text-base-content text-sm mb-1">
+              {ticket.subject}
+            </div>
+            <div className="text-xs text-base-content/70 mb-2">
+              {ticket.description}
+            </div>
+            <div className="flex gap-2 text-xs mb-2">
+              <span className="badge badge-outline badge-xs">
+                {ticket.category}
+              </span>
+              <span
+                className={`badge badge-xs ${getStatusBadge(
+                  ticket.supportTicketStatus
+                )}`}
+              >
+                {getStatusIcon(ticket.supportTicketStatus)}{" "}
+                {ticket.supportTicketStatus}
+              </span>
+              <span className="text-base-content/60">
+                {formatDate(ticket.createdAt)}
+              </span>
+            </div>
+          </div>
+          <div className="bg-base-200 rounded-lg p-3 max-h-64 overflow-y-auto mb-3 flex flex-col gap-2">
+            {/* Initial ticket message as first chat bubble */}
+            <div className="flex justify-end">
+              <div className="rounded-lg px-3 py-2 max-w-xs text-xs shadow-sm bg-primary text-white border border-primary relative">
+                <div className="mb-1 font-semibold flex items-center gap-1">
+                  <span className="text-xs">You</span>
+                  <span className="ml-2 text-[10px] opacity-60">
+                    (Initial message)
+                  </span>
+                </div>
+                <div>{ticket.description}</div>
+                <div className="mt-1 text-[10px] opacity-60 text-right">
+                  {formatDate(ticket.createdAt)}
+                </div>
+              </div>
+            </div>
+            {/* Chat responses, sorted oldest to newest */}
+            {isLoading ? (
+              <div className="flex justify-center items-center h-24">
+                <PuffLoader size={40} color="#6366f1" />
+              </div>
+            ) : data?.responses?.length ? (
+              [...data.responses]
+                .sort(
+                  (a, b) =>
+                    new Date(a.createdAt).getTime() -
+                    new Date(b.createdAt).getTime()
+                )
+                .map((resp: any) => (
+                  <div
+                    key={resp.responseId}
+                    className={`flex ${
+                      resp.responderType === "user"
+                        ? "justify-end"
+                        : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`rounded-lg px-3 py-2 max-w-xs text-xs shadow-sm relative ${
+                        resp.responderType === "user"
+                          ? "bg-primary text-white"
+                          : "bg-base-100 text-base-content border border-base-300"
+                      }`}
+                    >
+                      <div className="mb-1 font-semibold flex items-center gap-1">
+                        {resp.responderType === "user" ? (
+                          <span className="text-xs">You</span>
+                        ) : (
+                          <span className="text-xs">Admin</span>
+                        )}
+                      </div>
+                      <div>{resp.message}</div>
+                      <div className="mt-1 text-[10px] opacity-60 text-right">
+                        {formatDate(resp.createdAt)}
+                      </div>
+                    </div>
+                  </div>
+                ))
+            ) : (
+              <div className="text-xs text-base-content/60 text-center">
+                No messages yet.
+              </div>
+            )}
+          </div>
+          {canReply ? (
+            <form onSubmit={handleReply} className="flex gap-2 mt-2">
+              <input
+                type="text"
+                className="input input-bordered flex-1"
+                placeholder="Type your message..."
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                disabled={isReplying}
+                maxLength={1000}
+              />
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={isReplying || !reply.trim()}
+              >
+                {isReplying ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  <MdMessage />
+                )}
+                <span className="hidden sm:inline ml-1">Send</span>
+              </button>
+            </form>
+          ) : (
+            <div className="text-xs text-base-content/60 text-center mt-2">
+              This ticket is {ticket.supportTicketStatus.toLowerCase()}. You
+              cannot send new messages.
+            </div>
+          )}
+        </div>
+        <div
+          className="modal-backdrop bg-black/30 backdrop-blur-sm"
+          onClick={onClose}
+        ></div>
+      </div>
+    );
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <Toaster position="top-right" richColors />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
         <div className="text-center sm:text-left">
@@ -424,8 +663,19 @@ export const UserSupport = () => {
 
                   {/* Subject and Description */}
                   <div>
-                    <div className="font-semibold text-sm text-base-content mb-1">
+                    <div className="font-semibold text-sm text-base-content mb-1 flex items-center gap-2">
                       {ticket.subject}
+                      {/* Unread admin message badge */}
+                      {hasUnreadAdminMessage(ticket) && (
+                        <span className="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-bold animate-pulse">
+                          New
+                          {getUnreadAdminMessageCount(ticket) > 1 && (
+                            <span className="ml-1">
+                              {getUnreadAdminMessageCount(ticket)}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-base-content/70 line-clamp-2">
                       {ticket.description}
@@ -444,9 +694,20 @@ export const UserSupport = () => {
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-2">
-                    <button className="btn btn-xs btn-outline flex-1 h-8 min-h-8">
+                    <button
+                      className={`btn btn-xs btn-outline flex-1 h-8 min-h-8 relative ${
+                        hasUnreadAdminMessage(ticket) ? "border-blue-500" : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedTicket(ticket);
+                        setIsModalOpen(true);
+                      }}
+                    >
                       <MdMessage className="w-3 h-3 mr-1" />
-                      View
+                      {hasUnreadAdminMessage(ticket) ? "Reply" : "View"}
+                      {hasUnreadAdminMessage(ticket) && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></span>
+                      )}
                     </button>
                     {ticket.supportTicketStatus === "Open" && (
                       <button className="btn btn-xs btn-primary flex-1 h-8 min-h-8">
@@ -534,7 +795,13 @@ export const UserSupport = () => {
                       </td>
                       <td>
                         <div className="flex gap-1 sm:gap-2 justify-center items-center">
-                          <button className="btn btn-xs sm:btn-sm btn-outline flex-shrink-0">
+                          <button
+                            className="btn btn-xs sm:btn-sm btn-outline flex-shrink-0"
+                            onClick={() => {
+                              setSelectedTicket(ticket);
+                              setIsModalOpen(true);
+                            }}
+                          >
                             <span className="hidden sm:inline">View</span>
                             <MdMessage className="w-3 h-3 sm:hidden" />
                           </button>
@@ -733,6 +1000,15 @@ export const UserSupport = () => {
             onClick={() => !isCreating && setShowCreateModal(false)}
           ></div>
         </div>
+      )}
+
+      {/* Ticket Details Modal */}
+      {isModalOpen && selectedTicket && (
+        <TicketDetailsModal
+          ticket={selectedTicket}
+          user={user}
+          onClose={() => setIsModalOpen(false)}
+        />
       )}
     </div>
   );

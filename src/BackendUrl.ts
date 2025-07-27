@@ -1,0 +1,1 @@
+export const backendUrl = 'https://event-ticketing-and-venue-booking-system.onrender.com/api'

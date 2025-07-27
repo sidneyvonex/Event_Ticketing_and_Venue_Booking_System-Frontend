@@ -97,6 +97,7 @@ export const FormSec = () => {
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
+                autoComplete="current-password"
                 className="input input-bordered w-full border border-gray-300 rounded-md pr-10 focus:outline-none focus:ring-2 focus:ring-[#093FB4] focus:border-transparent transition-all duration-200"
                 {...register("password", { required: "Password is required" })}
               />

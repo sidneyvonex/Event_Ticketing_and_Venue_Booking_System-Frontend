@@ -1,10 +1,11 @@
  
 import { createApi,fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "../app/store";
+import { backendUrl } from "../../BackendUrl";
 
 export const eventApi = createApi({
     reducerPath: 'eventApi',
-    baseQuery: fetchBaseQuery({ baseUrl: 'https://event-ticketing-and-venue-booking-system.onrender.com/api',
+    baseQuery: fetchBaseQuery({ baseUrl: backendUrl,
     prepareHeaders: (headers, { getState }) => {
         const token = (getState() as RootState).auth.token;
         if (token) {
