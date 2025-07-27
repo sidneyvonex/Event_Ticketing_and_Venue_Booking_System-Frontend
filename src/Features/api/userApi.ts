@@ -77,6 +77,13 @@ export const userApi = createApi({
             },
             invalidatesTags: ["user", "users"]
         }),
+        forgotPassword: builder.mutation({
+            query: (email: string) => ({
+                url: 'auth/forgot-password',
+                method: 'POST',
+                body: { email },
+            }),
+        }),
         deleteUser:builder.mutation({
             query:(userId) =>({
                 url:`users/${userId}`,
@@ -95,5 +102,6 @@ export const {
     useUpdateUserProfileMutation,
     useChangePasswordMutation,
     useUpdateProfilePictureMutation,
-    useDeleteUserMutation
+    useDeleteUserMutation,
+    useForgotPasswordMutation
 } = userApi;

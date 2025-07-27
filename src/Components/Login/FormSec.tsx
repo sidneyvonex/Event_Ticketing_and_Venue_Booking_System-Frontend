@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Link } from "react-router";
+
 import HeroImg from "../../assets/Hero.jpeg";
 import { useState } from "react";
 import { CheckCircle, Eye, EyeOff, LogIn, XCircle } from "lucide-react";
@@ -10,8 +10,31 @@ import { Toaster, toast } from "sonner";
 import { useDispatch } from "react-redux";
 import type { UserLoginInputs } from "../../types/types";
 import { setCredentials } from "../../Features/auth/authSlice";
+import { Link } from "react-router-dom";
+// Forgot password state
+
 
 export const FormSec = () => {
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotPassword, { isLoading: forgotLoading }] =
+    userApi.useForgotPasswordMutation();
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) {
+      toast.error("Please enter your email address");
+      return;
+    }
+    try {
+      await forgotPassword(forgotEmail).unwrap();
+      toast.success("Password reset email sent! Check your inbox.");
+      setShowForgot(false);
+      setForgotEmail("");
+    } catch (error: any) {
+      toast.error(error?.data?.error || "Failed to send reset email");
+    }
+  };
   const dispatch = useDispatch();
 
   const [loginUser, { isLoading: dataLoading }] =
@@ -61,77 +84,127 @@ export const FormSec = () => {
             Sign in to continue to TicKenya
           </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit(formSubmit)}>
-            <div>
-              <label
-                htmlFor="email"
-                className="text-md font-medium text-gray-800 mb-2 ml-1"
-              >
-                Email
-              </label>
-              <input
-                type="email"
-                placeholder="Email"
-                className="input input-bordered w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093FB4] focus:border-transparent transition-all duration-200"
-                {...register("email", {
-                  required: "Email is Required",
-                  pattern: {
-                    value: /^\S+@\S+$/,
-                    message: "Invalid email address",
-                  },
-                })}
-              />
-              {errors.email && (
-                <span className="text-red-600 text-sm mt-1">
-                  {errors.email.message}
-                </span>
-              )}
-            </div>
-            <div className="relative w-full">
-              <label
-                htmlFor="password"
-                className="text-md font-medium text-gray-800 mb-2 ml-1"
-              >
-                Password
-              </label>
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                autoComplete="current-password"
-                className="input input-bordered w-full border border-gray-300 rounded-md pr-10 focus:outline-none focus:ring-2 focus:ring-[#093FB4] focus:border-transparent transition-all duration-200"
-                {...register("password", { required: "Password is required" })}
-              />
-              {errors.password && (
-                <span className="text-red-600 text-sm mt-1">
-                  {errors.password.message}
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black cursor-pointer select-none z-10"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-            <div className="text-right m-1">
-              <Link
-                to="/forgot-password"
-                className="text-sm text-[#093FB4] hover:underline font-medium"
-              >
-                Forgot Password?
-              </Link>
-            </div>
+          {/* Login Form */}
+          {!showForgot && (
+            <form className="space-y-4" onSubmit={handleSubmit(formSubmit)}>
+              <div>
+                <label
+                  htmlFor="email"
+                  className="text-md font-medium text-gray-800 mb-2 ml-1"
+                >
+                  Email
+                </label>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  className="input input-bordered w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093FB4] focus:border-transparent transition-all duration-200"
+                  {...register("email", {
+                    required: "Email is Required",
+                    pattern: {
+                      value: /^\S+@\S+$/,
+                      message: "Invalid email address",
+                    },
+                  })}
+                />
+                {errors.email && (
+                  <span className="text-red-600 text-sm mt-1">
+                    {errors.email.message}
+                  </span>
+                )}
+              </div>
+              <div className="relative w-full">
+                <label
+                  htmlFor="password"
+                  className="text-md font-medium text-gray-800 mb-2 ml-1"
+                >
+                  Password
+                </label>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  autoComplete="current-password"
+                  className="input input-bordered w-full border border-gray-300 rounded-md pr-10 focus:outline-none focus:ring-2 focus:ring-[#093FB4] focus:border-transparent transition-all duration-200"
+                  {...register("password", {
+                    required: "Password is required",
+                  })}
+                />
+                {errors.password && (
+                  <span className="text-red-600 text-sm mt-1">
+                    {errors.password.message}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black cursor-pointer select-none z-10"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+              <div className="text-right m-1">
+                <button
+                  type="button"
+                  className="text-sm text-[#093FB4] hover:underline font-medium bg-transparent border-none p-0"
+                  onClick={() => setShowForgot(true)}
+                >
+                  Forgot Password?
+                </button>
+              </div>
 
-            <button className="btn bg-[#093FB4] text-white w-full hover:bg-[#093fb4cb]">
-              {dataLoading ? (
-                <span className="loading loading-spinner"></span>
-              ) : (
-                <LogIn className="w-4 h-4" />
-              )}
-              Login
-            </button>
-          </form>
+              <button className="btn bg-[#093FB4] text-white w-full hover:bg-[#093fb4cb]">
+                {dataLoading ? (
+                  <span className="loading loading-spinner"></span>
+                ) : (
+                  <LogIn className="w-4 h-4" />
+                )}
+                Login
+              </button>
+            </form>
+          )}
+
+          {/* Forgot Password Form */}
+          {showForgot && (
+            <form className="space-y-4" onSubmit={handleForgotPassword}>
+              <div>
+                <label
+                  htmlFor="forgot-email"
+                  className="text-md font-medium text-gray-800 mb-2 ml-1"
+                >
+                  Enter your email
+                </label>
+                <input
+                  id="forgot-email"
+                  type="email"
+                  placeholder="Email"
+                  className="input input-bordered w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#093FB4] focus:border-transparent transition-all duration-200"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex justify-between items-center">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setShowForgot(false)}
+                  disabled={forgotLoading}
+                >
+                  Back to Login
+                </button>
+                <button
+                  className="btn bg-[#093FB4] text-white hover:bg-[#093fb4cb]"
+                  type="submit"
+                  disabled={forgotLoading}
+                >
+                  {forgotLoading ? (
+                    <span className="loading loading-spinner"></span>
+                  ) : (
+                    "Send Reset Link"
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
 
           <div className="flex items-center my-6">
             <hr className="flex-grow border-t border-gray-300" />
