@@ -1,1 +1,1 @@
-export const backendUrl = 'https://event-ticketing-and-venue-booking-system.onrender.com/api'
+export const backendUrl = 'https://eventsbookingmanagement.azurewebsites.net/'
