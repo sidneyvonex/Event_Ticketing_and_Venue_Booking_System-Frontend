@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../Features/app/store";
@@ -5,6 +6,9 @@ import { paymentsApi } from "../../Features/api/PaymentsApi";
 import type { PaymentDataTypes } from "../../types/types";
 import { PuffLoader } from "react-spinners";
 import { CircleCheckBig, Clock, DollarSign, RotateCcw } from "lucide-react";
+import Swal from "sweetalert2";
+import { useUpdateBookingsMutation } from "../../Features/api/BookingsApi";
+import { useUpdatePaymentStatusMutation } from "../../Features/api/PaymentsApi";
 
 // PDF generation function
 const generatePaymentPDF = (payment: PaymentDataTypes) => {
@@ -259,6 +263,9 @@ export const UserPaymentsPage = () => {
   });
 
   const [filterStatus, setFilterStatus] = useState("All");
+  const [updateBooking, { isLoading: isUpdating }] =
+    useUpdateBookingsMutation();
+  const [updatePaymentStatus] = useUpdatePaymentStatusMutation();
 
   // Filter payments based on status
   const filteredPayments =
@@ -307,6 +314,54 @@ export const UserPaymentsPage = () => {
   const pendingPayments = (filteredPayments as PaymentDataTypes[]).filter(
     (p: PaymentDataTypes) => p.paymentStatus === "Pending"
   );
+
+  // Cancel booking handler
+  const handleCancelBooking = async (payment: PaymentDataTypes) => {
+    if (!payment.booking || !payment.booking.bookingId) {
+      Swal.fire({
+        icon: "error",
+        title: "Booking Not Found",
+        text: "Could not find the booking for this payment.",
+      });
+      return;
+    }
+    const result = await Swal.fire({
+      title: "Cancel Booking?",
+      text: "Are you sure you want to cancel this booking? This cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, cancel it!",
+      cancelButtonText: "No, keep it",
+    });
+    if (result.isConfirmed) {
+      try {
+        await updateBooking({
+          bookingId: payment.booking.bookingId,
+          bookingStatus: "Cancelled",
+        }).unwrap();
+        // Also update payment status to Cancelled
+        if (payment.paymentId) {
+          await updatePaymentStatus({
+            paymentId: payment.paymentId,
+            paymentStatus: "Cancelled",
+          }).unwrap();
+        }
+        Swal.fire({
+          icon: "success",
+          title: "Booking Cancelled",
+          text: "Your booking and payment have been cancelled.",
+        });
+      } catch (err: any) {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: err?.data?.error || "Failed to cancel booking/payment.",
+        });
+      }
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -503,9 +558,9 @@ export const UserPaymentsPage = () => {
                         <button
                           className="btn btn-xs btn-outline"
                           onClick={() => generatePaymentPDF(payment)}
-                          title="View/Download Receipt"
+                          title="Download Receipt"
                         >
-                          View
+                          Download Receipt
                         </button>
                         {payment.paymentStatus === "Failed" && (
                           <button className="btn btn-xs btn-primary flex items-center gap-1">
@@ -513,6 +568,16 @@ export const UserPaymentsPage = () => {
                             Retry
                           </button>
                         )}
+                        {payment.paymentStatus === "Completed" &&
+                          payment.booking && (
+                            <button
+                              className="btn btn-xs btn-error flex items-center gap-1"
+                              onClick={() => handleCancelBooking(payment)}
+                              disabled={isUpdating}
+                            >
+                              Cancel
+                            </button>
+                          )}
                       </div>
                     </td>
                   </tr>

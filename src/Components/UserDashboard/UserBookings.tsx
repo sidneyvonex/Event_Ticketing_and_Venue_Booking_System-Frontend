@@ -1,11 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { bookingsApi } from "../../Features/api/BookingsApi";
+import { useUpdateBookingsMutation } from "../../Features/api/BookingsApi";
+import { useUpdatePaymentStatusMutation } from "../../Features/api/PaymentsApi";
 import type { RootState } from "../../Features/app/store";
 import type { BookingsDataTypes } from "../../types/types";
 import { PuffLoader } from "react-spinners";
 import { Link } from "react-router";
 import { MdSearch } from "react-icons/md";
+import Swal from "sweetalert2";
 
 // PDF generation function for ticket
 const generateTicketPDF = async (booking: BookingsDataTypes) => {
@@ -220,24 +224,51 @@ export const UserBookings = () => {
     generateTicketPDF(booking);
   };
 
-  const handleCancelBooking = (bookingId: number, bookingStatus: string) => {
-    console.log("Cancelling booking:", bookingId);
-
-    // Check if booking can be cancelled
-    if (bookingStatus?.toLowerCase() === "cancelled") {
-      alert("This booking is already cancelled");
+  // Cancel booking with Swal and update payment
+  const handleCancelBooking = async (booking: BookingsDataTypes) => {
+    if (booking.bookingStatus?.toLowerCase() === "cancelled") {
+      Swal.fire({
+        icon: "info",
+        title: "Already Cancelled",
+        text: "This booking is already cancelled.",
+      });
       return;
     }
-
-    // Confirm cancellation
-    const confirmCancel = window.confirm(
-      "Are you sure you want to cancel this booking? This action cannot be undone."
-    );
-
-    if (confirmCancel) {
-      // TODO: Add API call to cancel booking
-      // bookingsApi.useCancelBookingMutation()
-      alert(`Booking #${bookingId} has been cancelled`);
+    const result = await Swal.fire({
+      title: "Cancel Booking?",
+      text: "Are you sure you want to cancel this booking? This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, cancel it!",
+      cancelButtonText: "No, keep it",
+    });
+    if (result.isConfirmed) {
+      try {
+        await updateBooking({
+          bookingId: booking.bookingId,
+          BookingsData: "Cancelled",
+        }).unwrap();
+        // Try to update payment status if paymentId exists
+        if (booking.payments) {
+          await updatePaymentStatus({
+            paymentId: booking.payments,
+            paymentStatus: "Cancelled",
+          }).unwrap();
+        }
+        Swal.fire({
+          icon: "success",
+          title: "Booking Cancelled",
+          text: "Your booking and payment have been cancelled.",
+        });
+      } catch (err: any) {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: err?.data?.error || "Failed to cancel booking/payment.",
+        });
+      }
     }
   };
 
@@ -283,6 +314,10 @@ export const UserBookings = () => {
       )
     ).filter((status): status is string => typeof status === "string"),
   ];
+
+  const [updateBooking, { isLoading: isUpdating }] =
+    useUpdateBookingsMutation();
+  const [updatePaymentStatus] = useUpdatePaymentStatusMutation();
 
   return (
     <div className="p-4">
@@ -451,12 +486,8 @@ export const UserBookings = () => {
                             "pending") && (
                           <button
                             className="btn btn-xs btn-outline"
-                            onClick={() =>
-                              handleCancelBooking(
-                                booking.bookingId,
-                                booking.bookingStatus
-                              )
-                            }
+                            onClick={() => handleCancelBooking(booking)}
+                            disabled={isUpdating}
                             title="Cancel this booking"
                           >
                             Cancel

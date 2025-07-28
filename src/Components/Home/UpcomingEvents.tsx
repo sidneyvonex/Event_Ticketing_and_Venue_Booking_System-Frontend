@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { eventApi } from "../../Features/api/EventApi";
 import type { EventsDataTypes } from "../../types/types";
 import { PuffLoader } from "react-spinners";
@@ -9,6 +9,8 @@ export const UpcomingEvents = () => {
     isLoading,
     error,
   } = eventApi.useGetAllEventsQuery({});
+
+  const navigate = useNavigate();
 
   const formatDateTime = (eventDate: string, eventTime: string) => {
     const datePart = new Date(eventDate).toISOString().split("T")[0];
@@ -52,12 +54,12 @@ export const UpcomingEvents = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {eventsData.slice(0, 4).map((event: EventsDataTypes) => (
-            <Link
-              to={`/tickets/${event.eventId}`}
+            <div
               key={event.eventId}
-              className="block group  transition duration-300 transform hover:scale-[1.02]  hover:shadow-lg"
+              className="block group transition duration-300 transform hover:scale-[1.02] hover:shadow-lg cursor-pointer"
+              onClick={() => navigate(`/tickets/${event.eventId}`)}
             >
-              <div className="card w-full bg-base-100 rounded-2xl shadow-sm group-hover:shadow-lg transition duration-300 h-full cursor-pointer">
+              <div className="card w-full bg-base-100 rounded-2xl shadow-sm group-hover:shadow-lg transition duration-300 h-full">
                 <figure className="p-3">
                   <img
                     src={event.eventImageUrl}
@@ -99,7 +101,7 @@ export const UpcomingEvents = () => {
                   </div>
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

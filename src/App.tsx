@@ -29,6 +29,8 @@ import { AdminEvents } from "./Components/AdminDashboard/AdminEvents";
 
 import SalesReport from "./Components/AdminDashboard/SalesReport";
 import { AllUsers } from "./Components/AdminDashboard/AllUsers";
+import AdminSettings from "./Components/AdminDashboard/AdminSettings";
+import { BlogDetails } from "./Components/Blog/BlogDetails";
 
 function App() {
   const router = createBrowserRouter([
@@ -172,14 +174,23 @@ function App() {
         },
         {
           path: "settings",
-          element: (
-            <div className="p-6">
-              <h1 className="text-2xl font-bold">Admin Settings</h1>
-              <p>Settings component coming soon...</p>
-            </div>
-          ),
+          element: <AdminSettings />,
         },
       ],
+    },
+    {
+      path: "tickets/:eventId",
+      element: <EventDetails />,
+      errorElement: <NotFound />,
+    },
+    {
+      path: "blog/:blogId",
+      element: <BlogDetails />,
+      errorElement: <NotFound />,
+    },
+    {
+      path: "blogs/:blogId",
+      element: <BlogDetails />,
     },
   ]);
 

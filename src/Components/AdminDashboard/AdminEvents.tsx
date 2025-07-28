@@ -147,12 +147,7 @@ export const AdminEvents = () => {
   ) => {
     const { name, value } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Auto-fill tickets total when venue is selected
+    // If venueId is changed, autofill ticketsTotal from venue capacity
     if (name === "venueId" && value) {
       const selectedVenue = venues.find(
         (venue: any) => venue.venueId.toString() === value
@@ -160,14 +155,17 @@ export const AdminEvents = () => {
       if (selectedVenue) {
         setFormData((prev) => ({
           ...prev,
-          [name]: value,
+          venueId: value,
           ticketsTotal: selectedVenue.venueCapacity.toString(),
         }));
-        console.log(
-          `✅ Auto-filled tickets total: ${selectedVenue.venueCapacity} for venue: ${selectedVenue.venueName}`
-        );
+        return;
       }
     }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -1251,8 +1249,8 @@ export const AdminEvents = () => {
                         name="ticketsTotal"
                         min="1"
                         value={formData.ticketsTotal}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        readOnly
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Auto-filled from venue capacity"
                         disabled={isCreating}
                       />
@@ -1595,23 +1593,58 @@ export const AdminEvents = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Venue Capacity *
+                        Ticket Capacity *
                       </label>
                       <input
                         type="number"
+                        name="ticketsTotal"
                         min="1"
                         value={formData.ticketsTotal}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            ticketsTotal: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="100"
+                        readOnly
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Auto-filled from venue capacity"
                         disabled={isUpdating}
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Venue Selection (Editable in Edit Modal) */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                    <MapPin size={18} />
+                    Venue
+                  </h3>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Venue *
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="venueId"
+                        value={formData.venueId}
+                        onChange={handleInputChange}
+                        className="appearance-none w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={isUpdating || venuesLoading}
+                      >
+                        <option value="">Select a venue</option>
+                        {venues.map((venue: any) => (
+                          <option key={venue.venueId} value={venue.venueId}>
+                            {venue.venueName} - Capacity: {venue.venueCapacity}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        size={16}
+                      />
+                    </div>
+                    {venuesLoading && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Loading venues...
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
