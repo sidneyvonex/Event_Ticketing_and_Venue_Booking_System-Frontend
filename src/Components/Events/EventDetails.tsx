@@ -74,9 +74,10 @@ export const EventDetails = () => {
     if (checkoutRequestID && paymentStatus?.status === "pending") {
       interval = setInterval(async () => {
         try {
-          // Use a fallback for the backend URL if env is not set
+          // Use window._env_ or a hardcoded fallback, since process.env is not available in the browser at runtime
           const backendUrl =
-            process.env.REACT_APP_BACKEND_URL || "https://eventsbookingmanagement.azurewebsites.net"
+            (window as any)._env_?.REACT_APP_BACKEND_URL ||
+            "https://eventsbookingmanagement.azurewebsites.net";
 
           const response = await fetch(
             `${backendUrl}/api/payment-status?checkoutRequestID=${checkoutRequestID}`,
@@ -96,7 +97,6 @@ export const EventDetails = () => {
             toast.success("Payment successful! Your booking is confirmed.");
             clearInterval(interval);
 
-            // Navigate after toast is shown
             setTimeout(() => {
               navigate("/dashboard/bookings");
             }, 2000);
