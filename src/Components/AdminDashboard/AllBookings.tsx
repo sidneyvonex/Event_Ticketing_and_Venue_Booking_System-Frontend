@@ -678,113 +678,129 @@ export const AllBookings = () => {
 
         {/* Mobile Cards */}
         <div className="lg:hidden">
-          {paginatedBookings.map((booking: BookingsDataTypes) => (
-            <div
-              key={booking.bookingId}
-              className="border-b border-gray-200 p-4 space-y-3"
-            >
-              {/* Header Row */}
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-blue-600 text-lg">
-                  #{booking.bookingId}
-                </span>
-                {getStatusBadge(booking.bookingStatus)}
-              </div>
-
-              {/* Event & Customer Info */}
-              <div className="space-y-2">
-                <div>
-                  <span className="text-xs text-gray-500 uppercase tracking-wide">
-                    Event
-                  </span>
-                  <p className="font-medium text-gray-900">
-                    {booking.event?.eventTitle || "Unknown Event"}
-                  </p>
-                  {booking.event?.venue.venueName && (
-                    <p className="text-sm text-gray-600 flex items-center gap-1">
-                      <MapPin size={12} />
-                      {booking.event.venue.venueName}
-                    </p>
-                  )}
-                </div>
-                {/* Customer Info */}
-                <div>
-                  <span className="text-xs text-gray-500 uppercase tracking-wide">
-                    Customer
-                  </span>
-                  <p className="font-medium text-gray-900">
-                    {booking.user?.firstName && booking.user?.lastName
-                      ? `${booking.user.firstName} ${booking.user.lastName}`
-                      : booking.user?.firstName ||
-                        booking.user?.lastName ||
-                        `User ${booking.userId}`}
-                  </p>
-                  {booking.user?.email && (
-                    <p className="text-sm text-gray-600">
-                      {booking.user.email}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Details Grid */}
-              <div className="grid grid-cols-2 gap-4 py-2 border-t border-gray-100">
-                <div>
-                  <span className="text-xs text-gray-500 uppercase tracking-wide">
-                    Quantity
-                  </span>
-                  <p className="font-medium text-gray-900">
-                    {booking.quantity} tickets
-                  </p>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-500 uppercase tracking-wide">
-                    Amount
-                  </span>
-                  <p className="font-medium text-gray-900">
-                    {formatCurrency(booking.totalAmount)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Date and Actions */}
-              <div className="flex items-center justify-between pt-2">
-                <div>
-                  <span className="text-xs text-gray-500 uppercase tracking-wide">
-                    Date
-                  </span>
-                  <p className="text-sm text-gray-600">
-                    {formatDate(booking.createdAt)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openModal(booking)}
-                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                    title="View Details"
-                  >
-                    <Eye size={16} />
-                  </button>
-                  <button
-                    onClick={() => openEditModal(booking)}
-                    className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg"
-                    title="Edit Booking"
-                    disabled={isUpdating}
-                  >
-                    <Edit3 size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteBooking(booking.bookingId)}
-                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                    title="Delete Booking"
-                    disabled={isDeleting}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
+          {paginatedBookings.length === 0 ? (
+            <div className="text-center text-gray-500 py-12">
+              <Calendar className="mx-auto mb-4 text-gray-300" size={48} />
+              <h3 className="text-lg font-medium mb-2">No bookings found</h3>
+              <p>
+                {searchTerm || statusFilter !== "All"
+                  ? "Try adjusting your search or filter criteria."
+                  : "No bookings have been made yet."}
+              </p>
             </div>
-          ))}
+          ) : (
+            <div className="flex flex-col gap-4">
+              {paginatedBookings.map((booking: BookingsDataTypes) => (
+                <div
+                  key={booking.bookingId}
+                  className="rounded-xl bg-white border border-gray-200 shadow-sm p-4 flex flex-col gap-2 max-w-full overflow-x-auto"
+                  style={{ wordBreak: "break-word" }}
+                >
+                  {/* Header Row */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono text-blue-600 font-bold text-base">
+                      #{booking.bookingId}
+                    </span>
+                    {getStatusBadge(booking.bookingStatus)}
+                  </div>
+
+                  {/* Event Info */}
+                  <div className="mb-2">
+                    <div className="font-semibold text-gray-900 text-base truncate">
+                      {booking.event?.eventTitle || "Unknown Event"}
+                    </div>
+                    {booking.event?.venue.venueName && (
+                      <div className="flex items-center text-xs text-gray-500 mt-1">
+                        <MapPin size={14} className="mr-1" />
+                        <span className="truncate">
+                          {booking.event.venue.venueName}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Customer Info */}
+                  <div className="mb-2">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">
+                      Customer
+                    </div>
+                    <div className="font-medium text-gray-800 truncate">
+                      {booking.user?.firstName && booking.user?.lastName
+                        ? `${booking.user.firstName} ${booking.user.lastName}`
+                        : booking.user?.firstName ||
+                          booking.user?.lastName ||
+                          `User ${booking.userId}`}
+                    </div>
+                    {booking.user?.email && (
+                      <div className="text-xs text-gray-500 truncate">
+                        {booking.user.email}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-2 gap-2 border-t border-gray-100 pt-2 text-sm">
+                    <div>
+                      <span className="block text-xs text-gray-500">Qty</span>
+                      <span className="font-semibold text-gray-900">
+                        {booking.quantity}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-xs text-gray-500">
+                        Amount
+                      </span>
+                      <span className="font-semibold text-gray-900">
+                        {formatCurrency(booking.totalAmount)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-xs text-gray-500">Date</span>
+                      <span className="text-gray-700">
+                        {formatDate(booking.createdAt)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-xs text-gray-500">
+                        Status
+                      </span>
+                      <span>{getStatusBadge(booking.bookingStatus)}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <button
+                      onClick={() => openModal(booking)}
+                      className="flex-1 min-w-[100px] px-3 py-2 text-xs bg-blue-50 text-blue-700 rounded-lg border border-blue-100 hover:bg-blue-100 transition"
+                      title="View Details"
+                    >
+                      <Eye size={14} className="inline mr-1" />
+                      View
+                    </button>
+                    <button
+                      onClick={() => openEditModal(booking)}
+                      className="flex-1 min-w-[100px] px-3 py-2 text-xs bg-green-50 text-green-700 rounded-lg border border-green-100 hover:bg-green-100 transition"
+                      title="Edit Booking"
+                      disabled={isUpdating}
+                    >
+                      <Edit3 size={14} className="inline mr-1" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBooking(booking.bookingId)}
+                      className="flex-1 min-w-[100px] px-3 py-2 text-xs bg-red-50 text-red-700 rounded-lg border border-red-100 hover:bg-red-100 transition"
+                      title="Delete Booking"
+                      disabled={isDeleting}
+                    >
+                      <Trash2 size={14} className="inline mr-1" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Pagination */}
@@ -849,8 +865,8 @@ export const AllBookings = () => {
 
       {/* Booking Details Modal */}
       {isModalOpen && selectedBooking && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-2 sm:p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 shrink-0">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
@@ -1071,8 +1087,8 @@ export const AllBookings = () => {
 
       {/* Edit Booking Modal */}
       {isEditModalOpen && selectedBooking && (
-        <div className="fixed inset-0 backdrop-blur-sm  bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-2 sm:p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-2xl max-h-[95vh] overflow-y-auto flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 shrink-0">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900">

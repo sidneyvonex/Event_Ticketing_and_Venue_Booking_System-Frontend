@@ -1,4 +1,3 @@
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useSelector } from "react-redux";
@@ -567,18 +566,6 @@ export const UserSupport = () => {
               <p className="text-sm mt-3">Loading support tickets...</p>
             </div>
           </div>
-        ) : error ? (
-          <div className="flex items-center justify-center h-48">
-            <div className="text-center">
-              <MdClose className="w-12 h-12 mx-auto mb-4 text-error" />
-              <p className="text-xl font-semibold text-error">
-                Error loading tickets
-              </p>
-              <p className="text-sm text-base-content/50 mt-2">
-                Please try refreshing the page
-              </p>
-            </div>
-          </div>
         ) : userTickets.length === 0 &&
           !searchTerm &&
           filterStatus === "All" &&
@@ -599,6 +586,18 @@ export const UserSupport = () => {
                 <MdAdd className="w-4 h-4 mr-2" />
                 Create Your First Ticket
               </button>
+            </div>
+          </div>
+        ) : error && userTickets.length > 0 ? (
+          <div className="flex items-center justify-center h-48">
+            <div className="text-center">
+              <MdClose className="w-12 h-12 mx-auto mb-4 text-error" />
+              <p className="text-xl font-semibold text-error">
+                Error loading tickets
+              </p>
+              <p className="text-sm text-base-content/50 mt-2">
+                Please try refreshing the page
+              </p>
             </div>
           </div>
         ) : filteredTickets.length === 0 ? (

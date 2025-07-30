@@ -21,13 +21,15 @@ interface NavLinkProps {
   label: string;
   active: boolean;
   collapsed?: boolean;
+  onClick?: () => void;
 }
 
-interface AdminSideNavProps {
+interface SideNavProps {
   collapsed: boolean;
+  onNavClick?: () => void; // Add this prop
 }
 
-export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
+export const AdminSideNav = ({ collapsed, onNavClick }: SideNavProps) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,6 +66,7 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
             location.pathname === "/admindashboard"
           }
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/admindashboard/bookings"
@@ -71,6 +74,7 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
           label="All Bookings"
           active={isActive("/admindashboard/bookings")}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/admindashboard/events"
@@ -78,6 +82,7 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
           label="All Events"
           active={isActive("/admindashboard/events")}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/admindashboard/venues"
@@ -85,6 +90,7 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
           label="All Venues"
           active={isActive("/admindashboard/venues")}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/admindashboard/payments"
@@ -92,6 +98,7 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
           label="Payments"
           active={isActive("/admindashboard/payments")}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/admindashboard/support"
@@ -99,6 +106,7 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
           label="Support Tickets"
           active={isActive("/admindashboard/support")}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/admindashboard/users"
@@ -106,6 +114,7 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
           label="All Users"
           active={isActive("/admindashboard/users")}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/admindashboard/reports"
@@ -113,16 +122,19 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
           label="Sales Reports"
           active={isActive("/admindashboard/reports")}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
       </nav>
 
       <div className="pt-4 border-t border-white/10 space-y-2">
+        {/* Profile and Settings remain at the bottom, but act as nav items */}
         <NavItem
           to="/admindashboard/profile"
           icon={<Users size={20} />}
           label="Admin Profile"
           active={isActive("/admindashboard/profile")}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/admindashboard/settings"
@@ -130,6 +142,7 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
           label="Settings"
           active={isActive("/admindashboard/settings")}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <button
           className="w-full flex items-center gap-2 text-red-400 hover:text-red-300 px-2 py-2 rounded transition cursor-pointer hover:bg-white/5"
@@ -143,7 +156,14 @@ export const AdminSideNav = ({ collapsed }: AdminSideNavProps) => {
   );
 };
 
-const NavItem = ({ icon, label, to, active, collapsed }: NavLinkProps) => (
+const NavItem = ({
+  icon,
+  label,
+  to,
+  active,
+  collapsed,
+  onClick,
+}: NavLinkProps) => (
   <Link
     to={to}
     className={`flex items-center gap-3 px-2 py-2 rounded-md transition ${
@@ -151,6 +171,7 @@ const NavItem = ({ icon, label, to, active, collapsed }: NavLinkProps) => (
         ? "bg-white/10 text-white font-semibold"
         : "hover:bg-white/5 text-white/80"
     }`}
+    onClick={onClick}
   >
     {icon}
     {!collapsed && <span>{label}</span>}

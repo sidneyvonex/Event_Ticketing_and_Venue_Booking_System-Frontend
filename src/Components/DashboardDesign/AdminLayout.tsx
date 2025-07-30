@@ -12,6 +12,9 @@ export const AdminLayout = () => {
   const toggleSidebar = () => setCollapsed(!collapsed);
   const toggleMobileSidebar = () => setMobileOpen(!mobileOpen);
 
+  // Handler to close mobile sidebar from child
+  const handleMobileNavClick = () => setMobileOpen(false);
+
   return (
     <div className="flex min-h-screen bg-[#F9F8FF]">
       {/* Desktop Sidebar */}
@@ -37,7 +40,7 @@ export const AdminLayout = () => {
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <AdminSideNav collapsed={false} />
+        <AdminSideNav collapsed={false} onNavClick={handleMobileNavClick} />
       </div>
 
       {/* Main Content Area */}

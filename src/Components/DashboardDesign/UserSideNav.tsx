@@ -19,19 +19,22 @@ interface NavLinkProps {
   label: string;
   active: boolean;
   collapsed?: boolean;
+  onClick?: () => void;
 }
 
 interface SideNavProps {
   collapsed: boolean;
+  onNavClick?: () => void;
 }
 
-export const UserSideNav = ({ collapsed }: SideNavProps) => {
+export const UserSideNav = ({ collapsed, onNavClick }: SideNavProps) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     dispatch(clearCredentials());
     navigate("/login");
+    if (onNavClick) onNavClick();
   };
 
   return (
@@ -53,6 +56,7 @@ export const UserSideNav = ({ collapsed }: SideNavProps) => {
           label="Dashboard"
           active={false}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/dashboard/bookings"
@@ -60,6 +64,7 @@ export const UserSideNav = ({ collapsed }: SideNavProps) => {
           label="Bookings"
           active={false}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/dashboard/events"
@@ -67,6 +72,7 @@ export const UserSideNav = ({ collapsed }: SideNavProps) => {
           label="Events"
           active={false}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/dashboard/payments"
@@ -74,6 +80,7 @@ export const UserSideNav = ({ collapsed }: SideNavProps) => {
           label="Payments"
           active={false}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/dashboard/support"
@@ -81,6 +88,7 @@ export const UserSideNav = ({ collapsed }: SideNavProps) => {
           label="Support"
           active={false}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <NavItem
           to="/dashboard/profile"
@@ -88,16 +96,18 @@ export const UserSideNav = ({ collapsed }: SideNavProps) => {
           label="Profile"
           active={false}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
       </nav>
 
       <div className="pt-4 border-t border-white/10 space-y-2">
         <NavItem
-          to="/settings"
+          to="/dashboard/settings"
           icon={<Settings size={20} />}
           label="Settings"
           active={false}
           collapsed={collapsed}
+          onClick={onNavClick}
         />
         <button
           className="w-full flex items-center gap-2 text-red-400 hover:text-red-300 px-2 py-2 rounded transition cursor-pointer hover:bg-white/5"
@@ -111,7 +121,14 @@ export const UserSideNav = ({ collapsed }: SideNavProps) => {
   );
 };
 
-const NavItem = ({ icon, label, to, active, collapsed }: NavLinkProps) => (
+const NavItem = ({
+  icon,
+  label,
+  to,
+  active,
+  collapsed,
+  onClick,
+}: NavLinkProps) => (
   <Link
     to={to}
     className={`flex items-center gap-3 px-2 py-2 rounded-md transition ${
@@ -119,6 +136,7 @@ const NavItem = ({ icon, label, to, active, collapsed }: NavLinkProps) => (
         ? "bg-white/10 text-white font-semibold"
         : "hover:bg-white/5 text-white/80"
     }`}
+    onClick={onClick}
   >
     {icon}
     {!collapsed && <span>{label}</span>}

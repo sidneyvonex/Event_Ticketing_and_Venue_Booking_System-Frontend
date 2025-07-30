@@ -31,6 +31,7 @@ import SalesReport from "./Components/AdminDashboard/SalesReport";
 import { AllUsers } from "./Components/AdminDashboard/AllUsers";
 import AdminSettings from "./Components/AdminDashboard/AdminSettings";
 import { BlogDetails } from "./Components/Blog/BlogDetails";
+import { UserSettings } from "./Components/UserDashboard/UserSettings";
 
 function App() {
   const router = createBrowserRouter([
@@ -115,6 +116,10 @@ function App() {
         {
           path: "support",
           element: <UserSupport />,
+        },
+        {
+          path: "settings",
+          element: <UserSettings />,
         },
       ],
     },

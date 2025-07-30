@@ -12,6 +12,9 @@ export const UserLayout = () => {
   const toggleSidebar = () => setCollapsed(!collapsed);
   const toggleMobileSidebar = () => setMobileOpen(!mobileOpen);
 
+  // Handler to close mobile sidebar from child
+  const handleMobileNavClick = () => setMobileOpen(false);
+
   return (
     <div className="flex min-h-screen bg-[#F9F8FF]">
       {/* Desktop Sidebar */}
@@ -33,7 +36,7 @@ export const UserLayout = () => {
             className="bg-[#090040] w-[260px] h-full shadow-lg"
             onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside the sidebar
           >
-            <UserSideNav collapsed={false} />
+            <UserSideNav collapsed={false} onNavClick={handleMobileNavClick} />
           </div>
         </div>
       )}
@@ -46,9 +49,9 @@ export const UserLayout = () => {
       >
         {/* ✅ Topbar gets the toggles as props */}
         <Topbar
-  toggleSidebar={toggleSidebar}
-  toggleMobileSidebar={toggleMobileSidebar}
-/>
+          toggleSidebar={toggleSidebar}
+          toggleMobileSidebar={toggleMobileSidebar}
+        />
 
         <main className="flex-grow p-4 overflow-y-auto">
           <UserCard>

@@ -5,7 +5,13 @@ import type { RootState } from "../../Features/app/store";
 import { paymentsApi } from "../../Features/api/PaymentsApi";
 import type { PaymentDataTypes } from "../../types/types";
 import { PuffLoader } from "react-spinners";
-import { CircleCheckBig, Clock, DollarSign, RotateCcw, Download } from "lucide-react";
+import {
+  CircleCheckBig,
+  Clock,
+  DollarSign,
+  RotateCcw,
+  Download,
+} from "lucide-react";
 import Swal from "sweetalert2";
 import { useUpdateBookingsMutation } from "../../Features/api/BookingsApi";
 import { useUpdatePaymentStatusMutation } from "../../Features/api/PaymentsApi";
@@ -448,16 +454,63 @@ export const UserPaymentsPage = () => {
             <p className="text-sm">Loading your payments...</p>
           </div>
         </div>
-      ) : error ? (
+      ) : error &&
+        paymentsData &&
+        paymentsData.length === 0 &&
+        typeof error === "object" &&
+        error !== null &&
+        "data" in error &&
+        (error as any).data?.message === "No Payments Found for this User" ? (
+        // Show "No payments made" if backend returns a custom message for no payments
         <div className="flex items-center justify-center h-48 bg-base-100 rounded-2xl border border-base-300">
           <div className="text-center">
-            <div className="text-4xl mb-2">⚠️</div>
-            <p className="text-red-500 text-xl font-semibold">
-              Something went wrong
+            <div className="text-4xl mb-2">💳</div>
+            <p className="font-semibold text-xl">No payments made</p>
+            <p className="text-sm text-base-content/60">
+              You haven't made any payments yet.
             </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Failed to load payment history
+          </div>
+        </div>
+      ) : error ? (
+        // Show error only for real errors (not "no payments found")
+        <div className="flex items-center justify-center h-48 bg-base-100 rounded-2xl border border-base-300">
+          <div className="text-center">
+            <div className="text-4xl mb-2 text-error">⚠️</div>
+            <p className="font-semibold text-xl text-error">
+              Error loading payments
             </p>
+            <p className="text-sm text-base-content/60">
+              There was a problem fetching your payments. Please try refreshing
+              the page.
+            </p>
+          </div>
+        </div>
+      ) : paymentsData && paymentsData.length === 0 ? (
+        // ...existing code for "No payments made"...
+        <div className="flex items-center justify-center h-48 bg-base-100 rounded-2xl border border-base-300">
+          <div className="text-center">
+            <div className="text-4xl mb-2">💳</div>
+            <p className="font-semibold text-xl">No payments made</p>
+            <p className="text-sm text-base-content/60">
+              You haven't made any payments yet.
+            </p>
+          </div>
+        </div>
+      ) : filteredPayments.length === 0 ? (
+        // ...existing code...
+        <div className="flex items-center justify-center h-48 bg-base-100 rounded-2xl border border-base-300">
+          <div className="text-center">
+            <div className="text-4xl mb-2">🔍</div>
+            <p className="font-semibold text-xl">No matching payments</p>
+            <p className="text-sm text-base-content/60">
+              No payments match your current filter.
+            </p>
+            <button
+              onClick={() => setFilterStatus("All")}
+              className="btn btn-xs btn-outline mt-3"
+            >
+              Clear Filters
+            </button>
           </div>
         </div>
       ) : (
@@ -619,4 +672,3 @@ export const UserPaymentsPage = () => {
     </div>
   );
 };
-

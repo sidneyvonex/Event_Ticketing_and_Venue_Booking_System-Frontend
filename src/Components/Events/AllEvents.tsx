@@ -76,27 +76,21 @@ export const AllEvents = ({ basePath = "/events" }: AllEventsProps) => {
     <div className="px-4 md:px-8 py-6">
       {/* Toaster for notifications */}
       <Toaster position="top-right" richColors />
+
       {/* Header Section */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-base-content border-primary pl-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-base-content border-l-4 border-primary pl-4">
           All Events
         </h1>
-      </div>
-      {/* Filter/Sort/Search UI */}
-      <div className="py-5 max-w-full flex flex-col items-center gap-3 md:flex-row md:justify-center">
-        <div className="join">
-          <div>
-            <div>
-              <input
-                className="input join-item rounded-md px-15"
-                placeholder="Search by event or venue"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
+        <div className="flex flex-col sm:flex-row gap-2 md:gap-4 w-full md:w-auto">
+          <input
+            className="input input-bordered rounded-md px-4 w-full sm:w-56"
+            placeholder="Search by event or venue"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
           <select
-            className="select join-item"
+            className="select select-bordered rounded-md w-full sm:w-40"
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
           >
@@ -107,7 +101,7 @@ export const AllEvents = ({ basePath = "/events" }: AllEventsProps) => {
             <option value="art-design">Art & Design</option>
           </select>
           <select
-            className="select join-item"
+            className="select select-bordered rounded-md w-full sm:w-36"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
@@ -117,6 +111,7 @@ export const AllEvents = ({ basePath = "/events" }: AllEventsProps) => {
           </select>
         </div>
       </div>
+
       {/* Events Grid */}
       {error ? (
         <div className="flex items-center justify-center h-48">
