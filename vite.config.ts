@@ -30,12 +30,13 @@ export default defineConfig({
     },
   },
   build: {
-    minify: 'esbuild',
-    sourcemap: false,
-    rollupOptions: {
-      plugins: [
-        rollupPolyfillNode(), // ✅ use this instead of rollupNodePolyFill()
-      ],
-    },
+  minify: 'esbuild',
+  sourcemap: false,
+  rollupOptions: {
+    treeshake: true,
+    plugins: [
+      rollupPolyfillNode(),
+    ],
   },
+},
 });
