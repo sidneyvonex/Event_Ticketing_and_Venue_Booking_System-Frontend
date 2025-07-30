@@ -1,1 +1,0 @@
-export const backendUrl = 'https://eventsbookingmanagement.azurewebsites.net/api/'

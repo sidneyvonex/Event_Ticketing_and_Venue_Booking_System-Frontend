@@ -181,6 +181,7 @@ export const AllSupportTickets = () => {
   };
 
   // 2. Update getStatusClass to use neutral badge backgrounds
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getStatusClass = (status: string) => {
     return "bg-gray-100 text-gray-800 border-gray-200";
   };

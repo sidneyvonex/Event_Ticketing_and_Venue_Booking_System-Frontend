@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "../app/store";
-import { backendUrl } from "../../BackendUrl";
+
+
+const baseUrl= import.meta.env.VITE_API_BASE_URL
 
 export const bookingsApi = createApi({
     reducerPath:'bookingsApi',
-    baseQuery: fetchBaseQuery({baseUrl:backendUrl,
+    baseQuery: fetchBaseQuery({baseUrl:baseUrl,
         prepareHeaders: (headers, { getState }) => {
             const token = (getState() as RootState).auth.token;
             if (token) {

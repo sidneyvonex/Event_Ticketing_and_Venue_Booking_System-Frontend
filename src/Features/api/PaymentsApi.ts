@@ -1,11 +1,14 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "../app/store";
-import { backendUrl } from "../../BackendUrl";
+
+
+
+const baseUrl= import.meta.env.VITE_API_BASE_URL
 
 export const paymentsApi = createApi({
   reducerPath: "paymentsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: backendUrl,
+    baseUrl: baseUrl,
     prepareHeaders: (headers, { getState }) => {
       const state = getState() as RootState;
       const token = state.auth?.token;
