@@ -181,8 +181,22 @@ export const AllSupportTickets = () => {
   };
 
   // 2. Update getStatusClass to use neutral badge backgrounds
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // Use status for possible future logic, but keep it used
   const getStatusClass = (status: string) => {
+    // You can add logic here if you want to style differently by status
+    // For now, all statuses use the same class
+    if (status?.toLowerCase() === "resolved") {
+      return "bg-green-100 text-green-800 border-green-200";
+    }
+    if (status?.toLowerCase() === "closed") {
+      return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+    if (status?.toLowerCase() === "in progress") {
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    }
+    if (status?.toLowerCase() === "open") {
+      return "bg-orange-100 text-orange-800 border-orange-200";
+    }
     return "bg-gray-100 text-gray-800 border-gray-200";
   };
 
@@ -582,7 +596,7 @@ export const AllSupportTickets = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-4 border border-orange-200 bg-orange-50">
+        <div className=" rounded-lg p-4 border border-orange-200 bg-orange-50">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-orange-600">Open</p>
@@ -594,7 +608,7 @@ export const AllSupportTickets = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-4 border border-blue-200 bg-blue-50">
+        <div className=" rounded-lg p-4 border border-blue-200 bg-blue-50">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-blue-600">In Progress</p>
@@ -606,7 +620,7 @@ export const AllSupportTickets = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-4 border border-green-200 bg-green-50">
+        <div className=" rounded-lg p-4 border border-green-200 bg-green-50">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-green-600">Resolved</p>
@@ -618,7 +632,7 @@ export const AllSupportTickets = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-4 border border-red-200 bg-red-50">
+        <div className=" rounded-lg p-4 border border-red-200 bg-red-50">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-red-600">Unread Messages</p>
@@ -635,7 +649,7 @@ export const AllSupportTickets = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-4 border border-yellow-200 bg-yellow-50">
+        <div className=" rounded-lg p-4 border border-yellow-200 bg-yellow-50">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-yellow-600">Needs Attention</p>
