@@ -695,7 +695,7 @@ export const AllPayments = () => {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="flex items-center gap-1">
+                        <div className="flex flex-wrap items-center gap-1">
                           {/* View Button */}
                           <button
                             onClick={() => openModal(payment)}
@@ -706,12 +706,12 @@ export const AllPayments = () => {
                             View
                           </button>
 
-                          {/* Quick Actions based on status */}
+                          {/* Status-based Actions */}
                           {payment.paymentStatus === "Pending" && (
                             <>
                               <button
                                 onClick={() => handleMarkAsCompleted(payment)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
+                                className="flex items-center gap-1 px-2 py-1 text-xs text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Mark as Completed"
                                 disabled={isUpdatingStatus}
                               >
@@ -720,7 +720,7 @@ export const AllPayments = () => {
                               </button>
                               <button
                                 onClick={() => handleMarkAsFailed(payment)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Mark as Failed"
                                 disabled={isUpdatingStatus}
                               >
@@ -733,7 +733,7 @@ export const AllPayments = () => {
                           {payment.paymentStatus === "Completed" && (
                             <button
                               onClick={() => handleRefundPayment(payment)}
-                              className="flex items-center gap-1 px-2 py-1 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors"
+                              className="flex items-center gap-1 px-2 py-1 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Refund Payment"
                               disabled={isUpdatingStatus}
                             >
@@ -745,7 +745,7 @@ export const AllPayments = () => {
                           {payment.paymentStatus === "Failed" && (
                             <button
                               onClick={() => handleMarkAsCompleted(payment)}
-                              className="flex items-center gap-1 px-2 py-1 text-xs text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
+                              className="flex items-center gap-1 px-2 py-1 text-xs text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Mark as Completed"
                               disabled={isUpdatingStatus}
                             >

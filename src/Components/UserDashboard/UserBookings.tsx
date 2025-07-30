@@ -246,17 +246,29 @@ export const UserBookings = () => {
     });
     if (result.isConfirmed) {
       try {
+        // Make sure the payload matches your backend API expectations.
+        // Most likely, your backend expects { bookingStatus: "Cancelled" } as the body (not wrapped in BookingsData).
+        // Try this:
         await updateBooking({
           bookingId: booking.bookingId,
-          BookingsData: "Cancelled",
+          bookingStatus: "Cancelled",
         }).unwrap();
-        // Try to update payment status if paymentId exists
+
+        // If paymentId exists, update payment status as well
         if (booking.payments) {
           await updatePaymentStatus({
             paymentId: booking.payments,
             paymentStatus: "Cancelled",
           }).unwrap();
         }
+
+        // Refetch bookings to update UI
+        // If you have a refetch function from the bookings query, call it here:
+        // await refetchBookings();
+
+        // Or reload the page as a fallback:
+        window.location.reload();
+
         Swal.fire({
           icon: "success",
           title: "Booking Cancelled",
@@ -370,145 +382,262 @@ export const UserBookings = () => {
           </div>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-md">
-          <table className="table w-full">
-            {/* Table Head */}
-            <thead className="bg-base-200 text-base-content border-b border-base-300">
-              <tr>
-                <th>#</th>
-                <th>Event</th>
-                <th>Date & Time</th>
-                <th>Venue</th>
-                <th>Tickets</th>
-                <th>Total</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            {/* Table Body */}
-            <tbody className="divide-y divide-base-200">
-              {error || !BookingsData || BookingsData.length === 0 ? (
+        <>
+          {/* Responsive Table for desktop/tablet */}
+          <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-md hidden sm:block">
+            <table className="table w-full">
+              {/* Table Head */}
+              <thead className="bg-base-200 text-base-content border-b border-base-300">
                 <tr>
-                  <td colSpan={8} className="text-center py-12">
-                    <div className="text-base-content/70">
-                      <div className="text-4xl mb-2">🎫</div>
-                      <p className="font-semibold text-xl">No bookings found</p>
-                      <p className="text-sm">
-                        You haven't made any bookings yet.
-                      </p>
-                      <Link
-                        to="/dashboard/events"
-                        className="btn btn-xs btn-outline mt-3 inline-block"
-                      >
-                        Browse Events
-                      </Link>
-                    </div>
-                  </td>
+                  <th>#</th>
+                  <th>Event</th>
+                  <th>Date & Time</th>
+                  <th>Venue</th>
+                  <th>Tickets</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
-              ) : filteredBookings.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="text-center py-12">
-                    <div className="text-base-content/70">
-                      <div className="text-4xl mb-2">🔍</div>
-                      <p className="font-semibold text-xl">
-                        No matching bookings
-                      </p>
-                      <p className="text-sm">
-                        No bookings match your current search or filter.
-                      </p>
-                      <button
-                        onClick={() => {
-                          setSearchTerm("");
-                          setStatusFilter("All");
-                        }}
-                        className="btn btn-xs btn-outline mt-3"
-                      >
-                        Clear Filters
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredBookings.map((booking: BookingsDataTypes) => (
-                  <tr key={booking.bookingId} className="hover:bg-base-50">
-                    <td className="font-mono">#{booking.bookingId}</td>
-                    <td className="font-semibold">
-                      {booking.event.eventTitle}
-                    </td>
-                    <td>
-                      {formatDateTime(
-                        booking.event.eventDate,
-                        booking.event.eventTime
-                      )}
-                    </td>
-                    <td>{booking.event.venue.venueName}</td>
-                    <td className="text-center">{booking.quantity}</td>
-                    <td className="font-semibold">
-                      KSh {booking.event.ticketPrice}
-                    </td>
-                    <td>
-                      <span
-                        className={`badge ${
-                          booking.bookingStatus?.toLowerCase() === "confirmed"
-                            ? "badge-success"
-                            : booking.bookingStatus?.toLowerCase() === "pending"
-                            ? "badge-warning"
-                            : booking.bookingStatus?.toLowerCase() ===
-                              "cancelled"
-                            ? "badge-error"
-                            : "badge-info"
-                        }`}
-                      >
-                        {booking.bookingStatus}
-                      </span>
-                    </td>
+              </thead>
 
-                    {/* Actions Column */}
-                    <td>
-                      <div className="flex flex-col gap-1">
-                        {/* View Ticket - Only for confirmed bookings */}
-                        {booking.bookingStatus?.toLowerCase() ===
-                          "confirmed" && (
-                          <button
-                            className="btn btn-xs btn-outline"
-                            onClick={() => handleViewTicket(booking)}
-                            title="View your ticket"
-                          >
-                            View
-                          </button>
-                        )}
-
-                        {/* Cancel Booking - Only for confirmed/pending bookings */}
-                        {(booking.bookingStatus?.toLowerCase() ===
-                          "confirmed" ||
-                          booking.bookingStatus?.toLowerCase() ===
-                            "pending") && (
-                          <button
-                            className="btn btn-xs btn-outline"
-                            onClick={() => handleCancelBooking(booking)}
-                            disabled={isUpdating}
-                            title="Cancel this booking"
-                          >
-                            Cancel
-                          </button>
-                        )}
-
-                        {/* Already Cancelled */}
-                        {booking.bookingStatus?.toLowerCase() ===
-                          "cancelled" && (
-                          <div className="text-xs text-gray-500 italic">
-                            Cancelled
-                          </div>
-                        )}
+              {/* Table Body */}
+              <tbody className="divide-y divide-base-200">
+                {error || !BookingsData || BookingsData.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="text-center py-12">
+                      <div className="text-base-content/70">
+                        <div className="text-4xl mb-2">🎫</div>
+                        <p className="font-semibold text-xl">
+                          No bookings found
+                        </p>
+                        <p className="text-sm">
+                          You haven't made any bookings yet.
+                        </p>
+                        <Link
+                          to="/dashboard/events"
+                          className="btn btn-xs btn-outline mt-3 inline-block"
+                        >
+                          Browse Events
+                        </Link>
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : filteredBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="text-center py-12">
+                      <div className="text-base-content/70">
+                        <div className="text-4xl mb-2">🔍</div>
+                        <p className="font-semibold text-xl">
+                          No matching bookings
+                        </p>
+                        <p className="text-sm">
+                          No bookings match your current search or filter.
+                        </p>
+                        <button
+                          onClick={() => {
+                            setSearchTerm("");
+                            setStatusFilter("All");
+                          }}
+                          className="btn btn-xs btn-outline mt-3"
+                        >
+                          Clear Filters
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredBookings.map((booking: BookingsDataTypes) => (
+                    <tr key={booking.bookingId} className="hover:bg-base-50">
+                      <td className="font-mono">#{booking.bookingId}</td>
+                      <td className="font-semibold">
+                        {booking.event.eventTitle}
+                      </td>
+                      <td>
+                        {formatDateTime(
+                          booking.event.eventDate,
+                          booking.event.eventTime
+                        )}
+                      </td>
+                      <td>{booking.event.venue.venueName}</td>
+                      <td className="text-center">{booking.quantity}</td>
+                      <td className="font-semibold">
+                        KSh {booking.event.ticketPrice}
+                      </td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            booking.bookingStatus?.toLowerCase() === "confirmed"
+                              ? "badge-success"
+                              : booking.bookingStatus?.toLowerCase() ===
+                                "pending"
+                              ? "badge-warning"
+                              : booking.bookingStatus?.toLowerCase() ===
+                                "cancelled"
+                              ? "badge-error"
+                              : "badge-info"
+                          }`}
+                        >
+                          {booking.bookingStatus}
+                        </span>
+                      </td>
+
+                      {/* Actions Column */}
+                      <td>
+                        <div className="flex flex-col gap-1">
+                          {/* View Ticket - Only for confirmed bookings */}
+                          {booking.bookingStatus?.toLowerCase() ===
+                            "confirmed" && (
+                            <button
+                              className="btn btn-xs btn-outline"
+                              onClick={() => handleViewTicket(booking)}
+                              title="Download your ticket"
+                            >
+                              Download
+                            </button>
+                          )}
+
+                          {/* Cancel Booking - Only for confirmed/pending bookings */}
+                          {(booking.bookingStatus?.toLowerCase() ===
+                            "confirmed" ||
+                            booking.bookingStatus?.toLowerCase() ===
+                              "pending") && (
+                            <button
+                              className="btn btn-xs btn-outline"
+                              onClick={() => handleCancelBooking(booking)}
+                              disabled={isUpdating}
+                              title="Cancel this booking"
+                            >
+                              Cancel
+                            </button>
+                          )}
+
+                          {/* Already Cancelled */}
+                          {booking.bookingStatus?.toLowerCase() ===
+                            "cancelled" && (
+                            <div className="text-xs text-gray-500 italic">
+                              Cancelled
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-4">
+            {error || !BookingsData || BookingsData.length === 0 ? (
+              <div className="text-base-content/70 text-center py-12 rounded-xl bg-base-100 shadow">
+                <div className="text-4xl mb-2">🎫</div>
+                <p className="font-semibold text-xl">No bookings found</p>
+                <p className="text-sm">You haven't made any bookings yet.</p>
+                <Link
+                  to="/dashboard/events"
+                  className="btn btn-xs btn-outline mt-3 inline-block"
+                >
+                  Browse Events
+                </Link>
+              </div>
+            ) : filteredBookings.length === 0 ? (
+              <div className="text-base-content/70 text-center py-12 rounded-xl bg-base-100 shadow">
+                <div className="text-4xl mb-2">🔍</div>
+                <p className="font-semibold text-xl">No matching bookings</p>
+                <p className="text-sm">
+                  No bookings match your current search or filter.
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setStatusFilter("All");
+                  }}
+                  className="btn btn-xs btn-outline mt-3"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            ) : (
+              filteredBookings.map((booking: BookingsDataTypes) => (
+                <div
+                  key={booking.bookingId}
+                  className="rounded-xl bg-base-100 shadow-lg p-4 flex flex-col gap-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-base font-bold">
+                      #{booking.bookingId}
+                    </span>
+                    <span
+                      className={`badge ${
+                        booking.bookingStatus?.toLowerCase() === "confirmed"
+                          ? "badge-success"
+                          : booking.bookingStatus?.toLowerCase() === "pending"
+                          ? "badge-warning"
+                          : booking.bookingStatus?.toLowerCase() === "cancelled"
+                          ? "badge-error"
+                          : "badge-info"
+                      }`}
+                    >
+                      {booking.bookingStatus}
+                    </span>
+                  </div>
+                  <div className="font-semibold text-lg">
+                    {booking.event.eventTitle}
+                  </div>
+                  <div className="text-sm text-base-content/70">
+                    <span className="font-semibold">Date:</span>{" "}
+                    {formatDateTime(
+                      booking.event.eventDate,
+                      booking.event.eventTime
+                    )}
+                  </div>
+                  <div className="text-sm text-base-content/70">
+                    <span className="font-semibold">Venue:</span>{" "}
+                    {booking.event.venue.venueName}
+                  </div>
+                  <div className="text-sm text-base-content/70">
+                    <span className="font-semibold">Tickets:</span>{" "}
+                    {booking.quantity}
+                  </div>
+                  <div className="text-sm text-base-content/70">
+                    <span className="font-semibold">Total:</span> KSh{" "}
+                    {booking.event.ticketPrice}
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    {/* View Ticket - Only for confirmed bookings */}
+                    {booking.bookingStatus?.toLowerCase() === "confirmed" && (
+                      <button
+                        className="btn btn-xs btn-outline flex-1"
+                        onClick={() => handleViewTicket(booking)}
+                        title="Download your ticket"
+                      >
+                        Download
+                      </button>
+                    )}
+                    {/* Cancel Booking - Only for confirmed/pending bookings */}
+                    {(booking.bookingStatus?.toLowerCase() === "confirmed" ||
+                      booking.bookingStatus?.toLowerCase() === "pending") && (
+                      <button
+                        className="btn btn-xs btn-outline flex-1"
+                        onClick={() => handleCancelBooking(booking)}
+                        disabled={isUpdating}
+                        title="Cancel this booking"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    {/* Already Cancelled */}
+                    {booking.bookingStatus?.toLowerCase() === "cancelled" && (
+                      <div className="text-xs text-gray-500 italic flex-1 text-center">
+                        Cancelled
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
       )}
     </div>
   );

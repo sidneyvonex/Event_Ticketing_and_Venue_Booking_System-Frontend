@@ -1,4 +1,5 @@
-import { createApi,fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "../app/store";
 import { backendUrl } from "../../BackendUrl";
 
@@ -49,7 +50,15 @@ export const bookingsApi = createApi({
                 method:'DELETE',
             }),
             invalidatesTags:['bookings']
-        })
+        }),
+        bookAndPayMpesa: builder.mutation<any, { userId: number; eventId: number; quantity: number; totalAmount: number }>({
+            query: (body) => ({
+                url: 'bookings/mpesa',
+                method: 'POST',
+                body,
+            }),
+            invalidatesTags: ['bookings'],
+        }),
     })
 })
 
@@ -59,6 +68,7 @@ export const {
     useCreateBookingMutation,
     useGetAllBookingsForUserIdQuery,
     useUpdateBookingsMutation,
-    useDeleteBookingsMutation
+    useDeleteBookingsMutation,
+    useBookAndPayMpesaMutation,
 } = bookingsApi;
 

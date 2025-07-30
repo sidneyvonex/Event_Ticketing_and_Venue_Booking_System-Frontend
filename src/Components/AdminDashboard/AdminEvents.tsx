@@ -232,7 +232,7 @@ export const AdminEvents = () => {
     const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "KES",
     }).format(numAmount);
   };
 
@@ -778,7 +778,7 @@ export const AdminEvents = () => {
                     <div className="flex items-center gap-2 text-gray-600">
                       <Users size={14} />
                       <span>
-                        {event.ticketsSold || 0} /{" "}
+                        {event.ticketsSold } /{" "}
                         {event.venue?.venueCapacity || 0} sold
                       </span>
                     </div>

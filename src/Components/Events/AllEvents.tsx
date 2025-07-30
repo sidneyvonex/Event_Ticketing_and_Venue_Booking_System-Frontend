@@ -3,6 +3,7 @@ import { eventApi } from "../../Features/api/EventApi";
 import type { EventsDataTypes } from "../../types/types";
 import { PuffLoader } from "react-spinners";
 import { useState } from "react";
+import { Toaster, toast } from "sonner"; // Add this import
 
 interface AllEventsProps {
   basePath?: string; // Optional prop to customize the link path
@@ -64,8 +65,17 @@ export const AllEvents = ({ basePath = "/events" }: AllEventsProps) => {
     );
   }
 
+  // Show a toast notification when loading events
+  if (isLoading) {
+    toast.loading("Loading events...", { id: "events-loading" });
+  } else {
+    toast.dismiss("events-loading");
+  }
+
   return (
     <div className="px-4 md:px-8 py-6">
+      {/* Toaster for notifications */}
+      <Toaster position="top-right" richColors />
       {/* Header Section */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-base-content border-primary pl-4">

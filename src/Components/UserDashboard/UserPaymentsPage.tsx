@@ -5,7 +5,7 @@ import type { RootState } from "../../Features/app/store";
 import { paymentsApi } from "../../Features/api/PaymentsApi";
 import type { PaymentDataTypes } from "../../types/types";
 import { PuffLoader } from "react-spinners";
-import { CircleCheckBig, Clock, DollarSign, RotateCcw } from "lucide-react";
+import { CircleCheckBig, Clock, DollarSign, RotateCcw, Download } from "lucide-react";
 import Swal from "sweetalert2";
 import { useUpdateBookingsMutation } from "../../Features/api/BookingsApi";
 import { useUpdatePaymentStatusMutation } from "../../Features/api/PaymentsApi";
@@ -556,11 +556,32 @@ export const UserPaymentsPage = () => {
                     <td>
                       <div className="flex flex-col gap-1">
                         <button
-                          className="btn btn-xs btn-outline"
+                          className="btn btn-xs btn-outline btn-accent flex items-center justify-center"
+                          style={{
+                            borderColor: "#6366f1",
+                            color: "#6366f1",
+                            background: "white",
+                            transition: "background 0.2s, color 0.2s",
+                            padding: "0.25rem 0.5rem",
+                          }}
+                          onMouseOver={(e) => {
+                            (
+                              e.currentTarget as HTMLButtonElement
+                            ).style.background = "#6366f1";
+                            (e.currentTarget as HTMLButtonElement).style.color =
+                              "#fff";
+                          }}
+                          onMouseOut={(e) => {
+                            (
+                              e.currentTarget as HTMLButtonElement
+                            ).style.background = "white";
+                            (e.currentTarget as HTMLButtonElement).style.color =
+                              "#6366f1";
+                          }}
                           onClick={() => generatePaymentPDF(payment)}
                           title="Download Receipt"
                         >
-                          Download Receipt
+                          <Download className="w-4 h-4" />
                         </button>
                         {payment.paymentStatus === "Failed" && (
                           <button className="btn btn-xs btn-primary flex items-center gap-1">
@@ -598,3 +619,4 @@ export const UserPaymentsPage = () => {
     </div>
   );
 };
+

@@ -1,10 +1,14 @@
+"use client";
+
+import type React from "react";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../Features/app/store";
 import { eventApi } from "../../Features/api/EventApi";
-import { useCreateBookingMutation } from "../../Features/api/BookingsApi";
+import { useBookAndPayMpesaMutation } from "../../Features/api/BookingsApi";
 import {
   MdCalendarToday,
   MdLocationOn,
@@ -18,11 +22,21 @@ import {
   MdConfirmationNumber,
   MdError,
   MdHome,
-  MdRefresh,
   MdEventNote,
+  MdPhone,
+  MdPayment,
+  MdCheckCircle,
+  MdCancel,
 } from "react-icons/md";
 import { PuffLoader } from "react-spinners";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
+
+interface PaymentStatus {
+  status: "pending" | "completed" | "failed" | "cancelled";
+  message: string;
+  checkoutRequestID?: string;
+  bookingId?: number;
+}
 
 export const EventDetails = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -32,10 +46,17 @@ export const EventDetails = () => {
   );
 
   const [ticketQuantity, setTicketQuantity] = useState(1);
-  const [isBooking, setIsBooking] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(
+    null
+  );
+  const [checkoutRequestID, setCheckoutRequestID] = useState<string | null>(
+    null
+  );
 
-  // API hooks
-  const [createBooking] = useCreateBookingMutation();
+  // RTK Query hooks
+  const [bookAndPayMpesa, { isLoading: isBooking }] =
+    useBookAndPayMpesaMutation();
 
   // Fetch event details
   const {
@@ -45,6 +66,64 @@ export const EventDetails = () => {
   } = eventApi.useGetEventByIdQuery(eventId, {
     skip: !eventId,
   });
+
+  // Poll payment status when we have a checkout request ID
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (checkoutRequestID && paymentStatus?.status === "pending") {
+      interval = setInterval(async () => {
+        try {
+          // Use a fallback for the backend URL if env is not set
+          const backendUrl =
+            process.env.REACT_APP_BACKEND_URL || "https://eventsbookingmanagement.azurewebsites.net"
+
+          const response = await fetch(
+            `${backendUrl}/api/payment-status?checkoutRequestID=${checkoutRequestID}`,
+          );
+          const data = await response.json();
+
+          if (
+            data.paymentStatus &&
+            data.paymentStatus.toLowerCase() === "completed"
+          ) {
+            setPaymentStatus({
+              status: "completed",
+              message: "Payment successful! Your booking is confirmed.",
+              checkoutRequestID,
+              bookingId: data.bookingId,
+            });
+            toast.success("Payment successful! Your booking is confirmed.");
+            clearInterval(interval);
+
+            // Navigate after toast is shown
+            setTimeout(() => {
+              navigate("/dashboard/bookings");
+            }, 2000);
+          } else if (
+            data.paymentStatus &&
+            data.paymentStatus.toLowerCase() === "failed"
+          ) {
+            setPaymentStatus({
+              status: "failed",
+              message: "Payment failed. Please try again.",
+              checkoutRequestID,
+            });
+            toast.error("Payment failed. Please try again.");
+            clearInterval(interval);
+          }
+        } catch (error) {
+          // Optionally show a toast for polling errors
+          // toast.error("Error checking payment status. Please refresh.");
+          console.error("Error checking payment status:", error);
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [checkoutRequestID, paymentStatus?.status, navigate]);
 
   // Format date and time
   const formatDateTime = (eventDate: string, eventTime: string) => {
@@ -65,6 +144,35 @@ export const EventDetails = () => {
     };
   };
 
+  // Format phone number
+  const formatPhoneNumber = (value: string) => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, "");
+
+    // If starts with 0, replace with 254
+    if (digits.startsWith("0")) {
+      return "254" + digits.slice(1);
+    }
+
+    // If starts with +254, remove the +
+    if (digits.startsWith("254")) {
+      return digits;
+    }
+
+    // If starts with 7, 1, add 254
+    if (digits.startsWith("7") || digits.startsWith("1")) {
+      return "254" + digits;
+    }
+
+    return digits;
+  };
+
+  // Handle phone number input
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhoneNumber(formatted);
+  };
+
   // Handle quantity changes
   const increaseQuantity = () => {
     if (availableTickets > 0 && ticketQuantity < availableTickets) {
@@ -78,8 +186,8 @@ export const EventDetails = () => {
     }
   };
 
-  // Handle booking
-  const handleBooking = async () => {
+  // Handle M-Pesa booking using RTK Query
+  const handleMpesaBooking = async () => {
     if (!isAuthenticated) {
       toast.error("Please log in to book tickets");
       navigate("/login");
@@ -101,37 +209,51 @@ export const EventDetails = () => {
       return;
     }
 
-    setIsBooking(true);
+    if (!phoneNumber || phoneNumber.length < 12) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+
+    if (!phoneNumber.startsWith("254")) {
+      toast.error("Phone number must be in format 254XXXXXXXXX");
+      return;
+    }
+
+    setPaymentStatus(null);
+
+    const totalAmount =
+      Number.parseFloat(eventData.ticketPrice) * ticketQuantity;
+
+    const bookingData = {
+      userId: Number(user?.userId),
+      eventId: Number(eventData.eventId),
+      quantity: Number(ticketQuantity),
+      phoneNumber: phoneNumber,
+      totalAmount,
+    };
+
     try {
-      const totalAmount = parseFloat(eventData.ticketPrice) * ticketQuantity;
+      const result = await bookAndPayMpesa(bookingData).unwrap();
 
+      if (result.success && result.checkoutRequestID) {
+        setCheckoutRequestID(result.checkoutRequestID);
+        setPaymentStatus({
+          status: "pending",
+          message: "Payment initiated. Please complete payment on your phone.",
+          checkoutRequestID: result.checkoutRequestID,
+          bookingId: result.bookingId,
+        });
 
-      const bookingData = {
-        eventId: Number(eventData.eventId),
-        userId: Number(user?.userId),
-        quantity: Number(ticketQuantity),
-        totalAmount: Number(totalAmount),
-        bookingStatus: "Confirmed", // Fixed: Must be capitalized!
-      };
-
-
-      const result = await createBooking(bookingData).unwrap();
-
-      console.log("✅ Booking successful:", result);
-      toast.success(`Successfully booked ${ticketQuantity} ticket(s)!`);
-
-      // Navigate to booking confirmation or user dashboard
-      navigate("/dashboard/bookings");
-      
+        toast.success(
+          "Payment initiated! Please check your phone to complete the payment."
+        );
+      } else {
+        throw new Error(result.message || "Failed to initiate payment");
+      }
     } catch (error: any) {
-      console.log("❌ BOOKING FAILED");
-      console.log("Full error object:", error);
-      console.log("Error data:", error?.data);
-      console.log("Error status:", error?.status);
-      console.log("Error message:", error?.message);
+      let errorMessage = "Failed to initiate payment. Please try again.";
 
-      // Try to extract the actual error message
-      let errorMessage = "Failed to book tickets. Please try again.";
+      // Handle RTK Query error format
       if (error?.data?.error) {
         errorMessage = error.data.error;
       } else if (error?.data?.message) {
@@ -140,9 +262,12 @@ export const EventDetails = () => {
         errorMessage = error.message;
       }
 
+      setPaymentStatus({
+        status: "failed",
+        message: errorMessage,
+      });
+
       toast.error(errorMessage);
-    } finally {
-      setIsBooking(false);
     }
   };
 
@@ -160,81 +285,67 @@ export const EventDetails = () => {
     }
   };
 
+  // Reset payment status
+  const resetPaymentStatus = () => {
+    setPaymentStatus(null);
+    setCheckoutRequestID(null);
+    setPhoneNumber("");
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-base-200">
+      <div style={{ minHeight: "100vh", backgroundColor: "#f3f4f6" }}>
         {/* Loading Header */}
-        <div className="bg-base-100 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center gap-4">
-              <div className="skeleton w-16 h-8 rounded"></div>
-              <div className="skeleton w-32 h-4 rounded"></div>
+        <div
+          style={{
+            backgroundColor: "white",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          }}
+        >
+          <div
+            style={{ maxWidth: "1280px", margin: "0 auto", padding: "16px" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <div
+                style={{
+                  width: "64px",
+                  height: "32px",
+                  backgroundColor: "#e5e7eb",
+                  borderRadius: "4px",
+                }}
+              ></div>
+              <div
+                style={{
+                  width: "128px",
+                  height: "16px",
+                  backgroundColor: "#e5e7eb",
+                  borderRadius: "4px",
+                }}
+              ></div>
             </div>
           </div>
         </div>
-
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Loading Event Details */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Loading Event Image */}
-              <div className="bg-base-100 rounded-2xl p-6 shadow-sm">
-                <div className="skeleton w-full h-96 rounded-xl"></div>
-              </div>
-
-              {/* Loading Event Info */}
-              <div className="bg-base-100 rounded-2xl p-6 shadow-sm">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="skeleton w-3/4 h-8 rounded"></div>
-                  <div className="skeleton w-10 h-10 rounded-full"></div>
-                </div>
-
-                {/* Loading Meta Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className="skeleton w-10 h-10 rounded-full"></div>
-                      <div className="space-y-2">
-                        <div className="skeleton w-16 h-4 rounded"></div>
-                        <div className="skeleton w-24 h-3 rounded"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Loading Description */}
-                <div className="space-y-3">
-                  <div className="skeleton w-48 h-6 rounded"></div>
-                  <div className="skeleton w-full h-4 rounded"></div>
-                  <div className="skeleton w-full h-4 rounded"></div>
-                  <div className="skeleton w-3/4 h-4 rounded"></div>
-                </div>
+        <div
+          style={{ maxWidth: "1280px", margin: "0 auto", padding: "32px 16px" }}
+        >
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr", gap: "32px" }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: "400px",
+              }}
+            >
+              <div style={{ textAlign: "center" }}>
+                <PuffLoader size={60} color="#3b82f6" />
+                <p style={{ marginTop: "16px", color: "#6b7280" }}>
+                  Loading event details...
+                </p>
               </div>
             </div>
-
-            {/* Loading Booking Card */}
-            <div className="lg:col-span-1">
-              <div className="bg-base-100 rounded-2xl p-6 shadow-sm">
-                <div className="text-center mb-6 space-y-3">
-                  <div className="skeleton w-32 h-6 rounded mx-auto"></div>
-                  <div className="skeleton w-24 h-8 rounded mx-auto"></div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="skeleton w-full h-12 rounded"></div>
-                  <div className="skeleton w-full h-16 rounded"></div>
-                  <div className="skeleton w-full h-12 rounded"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Loading Indicator */}
-        <div className="fixed bottom-8 right-8">
-          <div className="bg-primary text-primary-content px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
-            <PuffLoader size={20} color="#ffffff" />
-            <span className="text-sm">Loading event...</span>
           </div>
         </div>
       </div>
@@ -242,13 +353,10 @@ export const EventDetails = () => {
   }
 
   if (error || !eventData) {
-    // Handle different error types properly
     let errorMessage = "Event not found";
     let errorStatus = 404;
-
     if (error) {
       if ("status" in error) {
-        // FetchBaseQueryError
         errorStatus = typeof error.status === "number" ? error.status : 500;
         if (
           "data" in error &&
@@ -259,72 +367,111 @@ export const EventDetails = () => {
           errorMessage = (error.data as any).message;
         }
       } else if ("message" in error) {
-        // SerializedError
         errorMessage = error.message || "Something went wrong";
         errorStatus = 500;
       }
     }
 
     return (
-      <div className="min-h-screen bg-base-200 flex items-center justify-center">
-        <div className="max-w-md w-full mx-4">
-          <div className="bg-base-100 rounded-2xl p-8 shadow-lg text-center">
-            {/* Error Icon */}
-            <div className="w-20 h-20 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <MdError className="w-10 h-10 text-error" />
+      <div
+        style={{
+          minHeight: "100vh",
+          backgroundColor: "#f3f4f6",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ maxWidth: "448px", width: "100%", margin: "0 16px" }}>
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "16px",
+              padding: "32px",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                width: "80px",
+                height: "80px",
+                backgroundColor: "#fee2e2",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 24px",
+              }}
+            >
+              <MdError
+                style={{ width: "40px", height: "40px", color: "#dc2626" }}
+              />
             </div>
-
-            {/* Error Title */}
-            <h1 className="text-2xl font-bold text-base-content mb-2">
+            <h1
+              style={{
+                fontSize: "24px",
+                fontWeight: "bold",
+                color: "#111827",
+                marginBottom: "8px",
+              }}
+            >
               {errorStatus === 404 ? "Event Not Found" : "Something Went Wrong"}
             </h1>
-
-            {/* Error Message */}
-            <p className="text-base-content/70 mb-2">
+            <p style={{ color: "#6b7280", marginBottom: "8px" }}>
               {errorStatus === 404
                 ? "The event you're looking for doesn't exist or may have been removed."
                 : errorMessage}
             </p>
-
-            {/* Error Code */}
-            <p className="text-sm text-base-content/50 mb-6">
+            <p
+              style={{
+                fontSize: "14px",
+                color: "#9ca3af",
+                marginBottom: "24px",
+              }}
+            >
               Error Code: {errorStatus}
               {eventId && ` | Event ID: ${eventId}`}
             </p>
-
-            {/* Action Buttons */}
-            <div className="space-y-3">
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+            >
               <button
                 onClick={() => navigate("/events")}
-                className="btn btn-primary w-full"
+                style={{
+                  backgroundColor: "#3b82f6",
+                  color: "white",
+                  padding: "12px 24px",
+                  borderRadius: "8px",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                }}
               >
-                <MdEventNote className="w-4 h-4 mr-2" />
+                <MdEventNote style={{ width: "16px", height: "16px" }} />
                 Browse All Events
               </button>
-
               <button
                 onClick={() => navigate("/")}
-                className="btn btn-outline w-full"
+                style={{
+                  backgroundColor: "transparent",
+                  color: "#3b82f6",
+                  padding: "12px 24px",
+                  borderRadius: "8px",
+                  border: "1px solid #3b82f6",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                }}
               >
-                <MdHome className="w-4 h-4 mr-2" />
+                <MdHome style={{ width: "16px", height: "16px" }} />
                 Go to Homepage
               </button>
-
-              <button
-                onClick={() => window.location.reload()}
-                className="btn btn-ghost w-full"
-              >
-                <MdRefresh className="w-4 h-4 mr-2" />
-                Try Again
-              </button>
-            </div>
-
-            {/* Help Text */}
-            <div className="mt-6 p-4 bg-base-200 rounded-lg">
-              <p className="text-sm text-base-content/60">
-                <strong>Need help?</strong> If this problem persists, please
-                contact our support team.
-              </p>
             </div>
           </div>
         </div>
@@ -336,229 +483,778 @@ export const EventDetails = () => {
     ? formatDateTime(eventData.eventDate, eventData.eventTime)
     : null;
   const totalPrice = eventData
-    ? parseFloat(eventData.ticketPrice) * ticketQuantity
+    ? Number.parseFloat(eventData.ticketPrice) * ticketQuantity
     : 0;
   const availableTickets = eventData
     ? (eventData.ticketsTotal || eventData.venue?.venueCapacity || 1000) -
       (eventData.ticketsSold || 0)
     : 0;
 
-  // Debug logging
-  console.log("Event Data:", eventData);
-  console.log("Available Tickets:", availableTickets);
-  console.log("Ticket Price:", eventData?.ticketPrice);
-  console.log("User data:", user);
-  console.log("Is Authenticated:", isAuthenticated);
-
   return (
-    <div className="min-h-screen bg-base-200">
+    <div style={{ minHeight: "100vh", backgroundColor: "#f3f4f6" }}>
+      <Toaster position="top-right" richColors />
       {/* Header */}
-      <div className="bg-base-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <button onClick={() => navigate(-1)} className="btn btn-ghost btn-sm">
-            <MdArrowBack className="w-5 h-5 mr-2" />
+      <div
+        style={{
+          backgroundColor: "white",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        }}
+      >
+        <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "16px" }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              backgroundColor: "transparent",
+              border: "none",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              color: "#374151",
+            }}
+          >
+            <MdArrowBack style={{ width: "20px", height: "20px" }} />
             Back
           </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div
+        style={{ maxWidth: "1280px", margin: "0 auto", padding: "32px 16px" }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: "32px",
+          }}
+        >
           {/* Event Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Event Image */}
-            <div className="bg-base-100 rounded-2xl p-6 shadow-sm">
-              <img
-                src={eventData.eventImageUrl}
-                alt={eventData.eventTitle}
-                className="w-full h-96 object-cover rounded-xl"
-              />
-            </div>
+          <div style={{ gridColumn: "span 2" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+            >
+              {/* Event Image */}
+              <div
+                style={{
+                  backgroundColor: "white",
+                  borderRadius: "16px",
+                  padding: "24px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                }}
+              >
+                <img
+                  src={
+                    eventData.eventImageUrl ||
+                    "/placeholder.svg?height=384&width=800&query=event"
+                  }
+                  alt={eventData.eventTitle}
+                  style={{
+                    width: "100%",
+                    height: "384px",
+                    objectFit: "cover",
+                    borderRadius: "12px",
+                  }}
+                />
+              </div>
 
-            {/* Event Info */}
-            <div className="bg-base-100 rounded-2xl p-6 shadow-sm">
-              <div className="flex justify-between items-start mb-4">
-                <h1 className="text-3xl font-bold text-base-content">
-                  {eventData.eventTitle}
-                </h1>
-                <button
-                  onClick={handleShare}
-                  className="btn btn-ghost btn-circle"
+              {/* Event Info */}
+              <div
+                style={{
+                  backgroundColor: "white",
+                  borderRadius: "16px",
+                  padding: "24px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    marginBottom: "16px",
+                  }}
                 >
-                  <MdShare className="w-5 h-5" />
-                </button>
-              </div>
+                  <h1
+                    style={{
+                      fontSize: "32px",
+                      fontWeight: "bold",
+                      color: "#111827",
+                      margin: 0,
+                    }}
+                  >
+                    {eventData.eventTitle}
+                  </h1>
+                  <button
+                    onClick={handleShare}
+                    style={{
+                      backgroundColor: "transparent",
+                      border: "none",
+                      padding: "8px",
+                      borderRadius: "50%",
+                      cursor: "pointer",
+                      color: "#6b7280",
+                    }}
+                  >
+                    <MdShare style={{ width: "20px", height: "20px" }} />
+                  </button>
+                </div>
 
-              {/* Event Meta Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <MdCalendarToday className="w-5 h-5 text-primary" />
+                {/* Event Meta Info */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                    gap: "16px",
+                    marginBottom: "24px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "40px",
+                        height: "40px",
+                        backgroundColor: "#dbeafe",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <MdCalendarToday
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          color: "#3b82f6",
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: "500", margin: 0 }}>Date</p>
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          color: "#6b7280",
+                          margin: 0,
+                        }}
+                      >
+                        {dateTime?.date}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">Date</p>
-                    <p className="text-sm text-base-content/70">
-                      {dateTime?.date}
-                    </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "40px",
+                        height: "40px",
+                        backgroundColor: "#fef3c7",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <MdAccessTime
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          color: "#f59e0b",
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: "500", margin: 0 }}>Time</p>
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          color: "#6b7280",
+                          margin: 0,
+                        }}
+                      >
+                        {dateTime?.time}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "40px",
+                        height: "40px",
+                        backgroundColor: "#d1fae5",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <MdLocationOn
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          color: "#10b981",
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: "500", margin: 0 }}>Venue</p>
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          color: "#6b7280",
+                          margin: 0,
+                        }}
+                      >
+                        {eventData?.venue?.venueName || "Event Venue"}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#9ca3af",
+                          margin: 0,
+                        }}
+                      >
+                        {eventData?.venue?.venueAddress ||
+                          "Location details will be provided"}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "40px",
+                        height: "40px",
+                        backgroundColor: "#e0e7ff",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <MdPeople
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          color: "#6366f1",
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: "500", margin: 0 }}>Capacity</p>
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          color: "#6b7280",
+                          margin: 0,
+                        }}
+                      >
+                        {availableTickets} of{" "}
+                        {eventData?.ticketsTotal ||
+                          eventData?.venue?.venueCapacity ||
+                          "1000"}{" "}
+                        available
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center">
-                    <MdAccessTime className="w-5 h-5 text-secondary" />
+                {/* Event Category */}
+                {eventData?.category && (
+                  <div style={{ marginBottom: "24px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <span style={{ fontSize: "14px", fontWeight: "500" }}>
+                        Category:
+                      </span>
+                      <span
+                        style={{
+                          backgroundColor: "#3b82f6",
+                          color: "white",
+                          padding: "4px 8px",
+                          borderRadius: "12px",
+                          fontSize: "12px",
+                        }}
+                      >
+                        {eventData.category}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">Time</p>
-                    <p className="text-sm text-base-content/70">
-                      {dateTime?.time}
-                    </p>
-                  </div>
-                </div>
+                )}
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
-                    <MdLocationOn className="w-5 h-5 text-accent" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Venue</p>
-                    <p className="text-sm text-base-content/70">
-                      {eventData?.venue?.venueName || "Event Venue"}
-                    </p>
-                    <p className="text-xs text-base-content/50">
-                      {eventData?.venue?.venueAddress ||
-                        "Location details will be provided"}
-                    </p>
-                  </div>
+                {/* Event Description */}
+                <div>
+                  <h3
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: "bold",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    About This Event
+                  </h3>
+                  <p style={{ color: "#4b5563", lineHeight: "1.6", margin: 0 }}>
+                    {eventData.description}
+                  </p>
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-info/10 rounded-full flex items-center justify-center">
-                    <MdPeople className="w-5 h-5 text-info" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Capacity</p>
-                    <p className="text-sm text-base-content/70">
-                      {availableTickets} of{" "}
-                      {eventData?.ticketsTotal ||
-                        eventData?.venue?.venueCapacity ||
-                        "1000"}{" "}
-                      available
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Event Category */}
-              {eventData?.category && (
-                <div className="mb-6">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Category:</span>
-                    <span className="badge badge-primary badge-sm">
-                      {eventData.category}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Event Description */}
-              <div>
-                <h3 className="text-xl font-bold mb-3">About This Event</h3>
-                <p className="text-base-content/80 leading-relaxed">
-                  {eventData.description}
-                </p>
               </div>
             </div>
           </div>
 
           {/* Booking Card */}
-          <div className="lg:col-span-1">
-            <div className="bg-base-100 rounded-2xl p-6 shadow-sm sticky top-8">
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <MdConfirmationNumber className="w-6 h-6 text-primary" />
-                  <h3 className="text-xl font-bold">Book Tickets</h3>
+          <div>
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: "16px",
+                padding: "24px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                position: "sticky",
+                top: "32px",
+              }}
+            >
+              <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    marginBottom: "8px",
+                  }}
+                >
+                  <MdConfirmationNumber
+                    style={{ width: "24px", height: "24px", color: "#3b82f6" }}
+                  />
+                  <h3
+                    style={{ fontSize: "20px", fontWeight: "bold", margin: 0 }}
+                  >
+                    Book Tickets
+                  </h3>
                 </div>
-                <div className="text-3xl font-bold text-primary">
+                <div
+                  style={{
+                    fontSize: "32px",
+                    fontWeight: "bold",
+                    color: "#3b82f6",
+                  }}
+                >
                   Ksh {eventData?.ticketPrice || "N/A"}
-                  <span className="text-sm font-normal text-base-content/60">
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "normal",
+                      color: "#6b7280",
+                    }}
+                  >
                     {" "}
                     per ticket
                   </span>
                 </div>
               </div>
 
+              {/* Phone Number Input */}
+              <div style={{ marginBottom: "24px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    marginBottom: "8px",
+                  }}
+                >
+                  M-Pesa Phone Number
+                </label>
+                <div style={{ position: "relative" }}>
+                  <MdPhone
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: "20px",
+                      height: "20px",
+                      color: "#6b7280",
+                    }}
+                  />
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={handlePhoneNumberChange}
+                    placeholder="254712345678"
+                    style={{
+                      width: "100%",
+                      padding: "12px 12px 12px 44px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "8px",
+                      fontSize: "16px",
+                      outline: "none",
+                      transition: "border-color 0.2s",
+                      boxSizing: "border-box",
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = "#3b82f6")}
+                    onBlur={(e) => (e.target.style.borderColor = "#d1d5db")}
+                  />
+                </div>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#6b7280",
+                    marginTop: "4px",
+                    margin: "4px 0 0 0",
+                  }}
+                >
+                  Format: 254XXXXXXXXX (Safaricom)
+                </p>
+              </div>
+
               {/* Quantity Selector */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">
+              <div style={{ marginBottom: "24px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    marginBottom: "8px",
+                  }}
+                >
                   Number of Tickets
                 </label>
-                <div className="flex items-center justify-center gap-4">
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "16px",
+                  }}
+                >
                   <button
                     onClick={decreaseQuantity}
                     disabled={ticketQuantity <= 1}
-                    className="btn btn-circle btn-outline btn-sm"
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "50%",
+                      border: "1px solid #d1d5db",
+                      backgroundColor:
+                        ticketQuantity <= 1 ? "#f3f4f6" : "white",
+                      cursor: ticketQuantity <= 1 ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
                   >
-                    <MdRemove className="w-4 h-4" />
+                    <MdRemove style={{ width: "16px", height: "16px" }} />
                   </button>
-                  <span className="text-2xl font-bold w-12 text-center">
+                  <span
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: "bold",
+                      width: "48px",
+                      textAlign: "center",
+                    }}
+                  >
                     {ticketQuantity}
                   </span>
                   <button
                     onClick={increaseQuantity}
                     disabled={ticketQuantity >= availableTickets}
-                    className="btn btn-circle btn-outline btn-sm"
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "50%",
+                      border: "1px solid #d1d5db",
+                      backgroundColor:
+                        ticketQuantity >= availableTickets
+                          ? "#f3f4f6"
+                          : "white",
+                      cursor:
+                        ticketQuantity >= availableTickets
+                          ? "not-allowed"
+                          : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
                   >
-                    <MdAdd className="w-4 h-4" />
+                    <MdAdd style={{ width: "16px", height: "16px" }} />
                   </button>
                 </div>
-                <p className="text-xs text-center text-base-content/60 mt-2">
+                <p
+                  style={{
+                    fontSize: "12px",
+                    textAlign: "center",
+                    color: "#6b7280",
+                    marginTop: "8px",
+                    margin: "8px 0 0 0",
+                  }}
+                >
                   Limited by available tickets only
                 </p>
               </div>
 
               {/* Price Summary */}
-              <div className="border-t border-base-300 pt-4 mb-6">
-                <div className="flex justify-between items-center mb-2">
+              <div
+                style={{
+                  borderTop: "1px solid #e5e7eb",
+                  paddingTop: "16px",
+                  marginBottom: "24px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "8px",
+                  }}
+                >
                   <span>Tickets ({ticketQuantity}x)</span>
                   <span>Ksh {totalPrice.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between items-center font-bold text-lg">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontWeight: "bold",
+                    fontSize: "18px",
+                  }}
+                >
                   <span>Total</span>
-                  <span className="text-primary">
+                  <span style={{ color: "#3b82f6" }}>
                     Ksh {totalPrice.toFixed(2)}
                   </span>
                 </div>
               </div>
 
+              {/* Payment Status */}
+              {paymentStatus && (
+                <div
+                  style={{
+                    marginBottom: "16px",
+                    padding: "12px",
+                    borderRadius: "8px",
+                    backgroundColor:
+                      paymentStatus.status === "completed"
+                        ? "#d1fae5"
+                        : paymentStatus.status === "failed"
+                        ? "#fee2e2"
+                        : "#fef3c7",
+                    border: `1px solid ${
+                      paymentStatus.status === "completed"
+                        ? "#10b981"
+                        : paymentStatus.status === "failed"
+                        ? "#dc2626"
+                        : "#f59e0b"
+                    }`,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {paymentStatus.status === "completed" && (
+                      <MdCheckCircle
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          color: "#10b981",
+                        }}
+                      />
+                    )}
+                    {paymentStatus.status === "failed" && (
+                      <MdCancel
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          color: "#dc2626",
+                        }}
+                      />
+                    )}
+                    {paymentStatus.status === "pending" && (
+                      <MdPayment
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          color: "#f59e0b",
+                        }}
+                      />
+                    )}
+                    <span style={{ fontWeight: "500", fontSize: "14px" }}>
+                      {paymentStatus.status === "completed"
+                        ? "Payment Successful"
+                        : paymentStatus.status === "failed"
+                        ? "Payment Failed"
+                        : "Payment Pending"}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: "12px", margin: 0, color: "#374151" }}>
+                    {paymentStatus.message}
+                  </p>
+                  {paymentStatus.status === "pending" && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginTop: "8px",
+                      }}
+                    >
+                      <PuffLoader size={16} color="#f59e0b" />
+                      <span style={{ fontSize: "12px", color: "#92400e" }}>
+                        Waiting for payment confirmation...
+                      </span>
+                    </div>
+                  )}
+                  {(paymentStatus.status === "failed" ||
+                    paymentStatus.status === "completed") && (
+                    <button
+                      onClick={resetPaymentStatus}
+                      style={{
+                        marginTop: "8px",
+                        padding: "4px 8px",
+                        fontSize: "12px",
+                        backgroundColor: "transparent",
+                        border: "1px solid #6b7280",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        color: "#6b7280",
+                      }}
+                    >
+                      {paymentStatus.status === "completed"
+                        ? "Book Another"
+                        : "Try Again"}
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Booking Button */}
               {availableTickets > 0 ? (
                 <button
-                  onClick={handleBooking}
-                  disabled={isBooking || !isAuthenticated}
-                  className="btn btn-primary w-full"
+                  onClick={handleMpesaBooking}
+                  disabled={
+                    isBooking ||
+                    !isAuthenticated ||
+                    paymentStatus?.status === "pending"
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "16px",
+                    backgroundColor:
+                      isBooking ||
+                      !isAuthenticated ||
+                      paymentStatus?.status === "pending"
+                        ? "#9ca3af"
+                        : "#3b82f6",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "16px",
+                    fontWeight: "500",
+                    cursor:
+                      isBooking ||
+                      !isAuthenticated ||
+                      paymentStatus?.status === "pending"
+                        ? "not-allowed"
+                        : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                  }}
                 >
                   {isBooking ? (
                     <>
-                      <span className="loading loading-spinner loading-sm"></span>
-                      Booking...
+                      <PuffLoader size={20} color="#ffffff" />
+                      Initiating Payment...
+                    </>
+                  ) : paymentStatus?.status === "pending" ? (
+                    <>
+                      <MdPayment style={{ width: "20px", height: "20px" }} />
+                      Payment Pending
                     </>
                   ) : !isAuthenticated ? (
                     "Login to Book"
                   ) : (
-                    "Book Now"
+                    <>
+                      <MdPayment style={{ width: "20px", height: "20px" }} />
+                      Pay with M-Pesa
+                    </>
                   )}
                 </button>
               ) : (
-                <button disabled className="btn btn-disabled w-full">
+                <button
+                  disabled
+                  style={{
+                    width: "100%",
+                    padding: "16px",
+                    backgroundColor: "#9ca3af",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "16px",
+                    fontWeight: "500",
+                    cursor: "not-allowed",
+                  }}
+                >
                   Sold Out
                 </button>
               )}
 
               {!isAuthenticated && (
-                <p className="text-center text-sm text-base-content/60 mt-3">
+                <p
+                  style={{
+                    textAlign: "center",
+                    fontSize: "14px",
+                    color: "#6b7280",
+                    marginTop: "12px",
+                    margin: "12px 0 0 0",
+                  }}
+                >
                   <button
                     onClick={() => navigate("/login")}
-                    className="link link-primary"
+                    style={{
+                      backgroundColor: "transparent",
+                      border: "none",
+                      color: "#3b82f6",
+                      textDecoration: "underline",
+                      cursor: "pointer",
+                    }}
                   >
                     Sign in
                   </button>{" "}
@@ -567,15 +1263,46 @@ export const EventDetails = () => {
               )}
 
               {/* Event Status */}
-              <div className="mt-4 p-3 bg-base-200 rounded-lg">
-                <div className="flex items-center gap-2 text-sm">
-                  <MdStar className="w-4 h-4 text-warning" />
-                  <span className="font-medium">Event Status:</span>
-                  <span className="badge badge-success badge-sm">
+              <div
+                style={{
+                  marginTop: "16px",
+                  padding: "12px",
+                  backgroundColor: "#f3f4f6",
+                  borderRadius: "8px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "14px",
+                  }}
+                >
+                  <MdStar
+                    style={{ width: "16px", height: "16px", color: "#f59e0b" }}
+                  />
+                  <span style={{ fontWeight: "500" }}>Event Status:</span>
+                  <span
+                    style={{
+                      backgroundColor: "#10b981",
+                      color: "white",
+                      padding: "2px 6px",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  >
                     Available
                   </span>
                 </div>
-                <p className="text-xs text-base-content/60 mt-1">
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#6b7280",
+                    marginTop: "4px",
+                    margin: "4px 0 0 0",
+                  }}
+                >
                   {eventData?.ticketsSold || 0} tickets sold •{" "}
                   {availableTickets} remaining
                 </p>
@@ -587,3 +1314,4 @@ export const EventDetails = () => {
     </div>
   );
 };
+
