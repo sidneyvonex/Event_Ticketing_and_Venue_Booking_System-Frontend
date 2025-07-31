@@ -3,7 +3,6 @@ import React, { useMemo, useState, useRef } from "react";
 import { useGetAllPaymentsQuery } from "../../Features/api/PaymentsApi";
 import { useGetAllEventsQuery } from "../../Features/api/EventApi";
 import { useGetAllBooksQuery } from "../../Features/api/BookingsApi";
-
 import type {
   PaymentDataTypes,
   EventsDataTypes,
@@ -105,40 +104,30 @@ const pdfStyles = StyleSheet.create({
 });
 
 const SalesReport: React.FC = () => {
-  const [period, setPeriod] = useState("monthly");
+  const [period, setPeriod] = useState<"monthly" | "daily" | "yearly">("monthly");
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartImage, setChartImage] = useState<string>("");
 
   const { data: payments = [] } = useGetAllPaymentsQuery({});
   const { data: events = [] } = useGetAllEventsQuery({});
   const { data: bookings = [] } = useGetAllBooksQuery({});
-  // users is fetched but not used, you can remove it if not needed
-  // const { data: users = [] } = useGetAllUserProfilesQuery({});
 
   // Group sales data for chart
   const salesData = useMemo(() => {
     const grouped = (payments as PaymentDataTypes[]).reduce((acc, payment) => {
-      // Use payment.paymentDate as fallback if createdAt is missing
       const date = new Date(payment.createdAt || payment.paymentDate);
       if (isNaN(date.getTime())) return acc;
       let key = "";
       if (period === "monthly") {
-        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-          2,
-          "0"
-        )}`;
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       } else if (period === "daily") {
-        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-          2,
-          "0"
-        )}-${String(date.getDate()).padStart(2, "0")}`;
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
       } else {
         key = `${date.getFullYear()}`;
       }
       acc[key] = (acc[key] || 0) + Number(payment.amount || 0);
       return acc;
     }, {} as Record<string, number>);
-    // Sort by period key
     return Object.entries(grouped)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, total]) => ({
@@ -162,20 +151,6 @@ const SalesReport: React.FC = () => {
       ).size,
     };
   }, [payments, bookings, events]);
-
-  // Generate chart image for PDF
-  const handleGeneratePDF = async () => {
-    if (chartRef.current) {
-      // Wait for chart to render
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      const canvas = await html2canvas(chartRef.current);
-      const imgData = canvas.toDataURL("image/png");
-      setChartImage(imgData);
-    }
-  };
-
-  const periodLabel =
-    period === "monthly" ? "Monthly" : period === "daily" ? "Daily" : "Yearly";
 
   // Top Events by Revenue and Tickets Sold
   const topEvents = useMemo(() => {
@@ -206,10 +181,9 @@ const SalesReport: React.FC = () => {
         Number(eventStats[eventId].event.ticketPrice || 0);
     });
 
-    // Convert to array and sort by revenue
     return Object.values(eventStats)
       .sort((a, b) => b.totalRevenue - a.totalRevenue)
-      .slice(0, 5); // Top 5 events
+      .slice(0, 5);
   }, [bookings, events]);
 
   // Top Users by Tickets Bought
@@ -248,78 +222,107 @@ const SalesReport: React.FC = () => {
 
     return Object.values(userStats)
       .sort((a, b) => b.ticketsBought - a.ticketsBought)
-      .slice(0, 5); // Top 5 users
+      .slice(0, 5);
   }, [bookings]);
+
+  // Generate chart image for PDF (includes chart and tables)
+  const handleGeneratePDF = async () => {
+    if (chartRef.current) {
+      // Wait for chart to render
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      // Only capture the chart area for the PDF image
+      // Use a safe background color (hex or rgb, not oklch or color functions)
+      const chartDiv = chartRef.current.querySelector("div");
+      const target = chartDiv || chartRef.current;
+      // html2canvas can error if any CSS uses oklch() or similar unsupported color functions.
+      // To avoid this, ensure your Tailwind config/theme does not use oklch() colors, or override with a safe color here:
+      const canvas = await html2canvas(target as HTMLElement, { backgroundColor: "#ffffff" });
+      const imgData = canvas.toDataURL("image/png");
+      setChartImage(imgData);
+    }
+  };
+
+  const periodLabel =
+    period === "monthly" ? "Monthly" : period === "daily" ? "Daily" : "Yearly";
 
   return (
     <div className="p-6">
-      <div className="mb-4 flex flex-wrap items-center gap-4">
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="border px-3 py-2 rounded-lg shadow"
+      {/* Chart Section with Title and Description */}
+      <div className="mb-6">
+        <h2 className="text-xl font-bold mb-1 text-base-content">
+          Sales Trend Chart ({periodLabel})
+        </h2>
+        <p className="text-base-content/70 mb-3">
+          This chart shows the total sales revenue over time based on the selected period. Use it to analyze sales performance and trends for your events.
+        </p>
+        <div className="flex flex-wrap gap-4 mb-4">
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value as "monthly" | "daily" | "yearly")}
+            className="border px-3 py-2 rounded-lg shadow"
+          >
+            <option value="daily">Daily</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+          <button
+            onClick={handleGeneratePDF}
+            className="px-4 py-2 bg-gray-700 text-white rounded-lg"
+            type="button"
+          >
+            Generate Chart Image
+          </button>
+          <PDFDownloadLink
+            document={
+              <SalesReportPDF
+                report={report}
+                periodLabel={periodLabel}
+                chartImage={chartImage}
+              />
+            }
+            fileName={`sales-report-${period}.pdf`}
+          >
+            {({ loading }) => (
+              <button
+                id="pdf-download-btn"
+                type="button"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                disabled={!chartImage}
+              >
+                {loading ? "Preparing PDF..." : "Download PDF"}
+              </button>
+            )}
+          </PDFDownloadLink>
+        </div>
+        <div
+          ref={chartRef}
+          style={{ width: "100%", height: 300, background: "#fff" }}
+          className="rounded-lg border border-gray-200 p-2"
         >
-          <option value="daily">Daily</option>
-          <option value="monthly">Monthly</option>
-          <option value="yearly">Yearly</option>
-        </select>
-
-        <button
-          onClick={handleGeneratePDF}
-          className="px-4 py-2 bg-gray-700 text-white rounded-lg"
-        >
-          Generate Chart
-        </button>
-
-        <PDFDownloadLink
-          document={
-            <SalesReportPDF
-              report={report}
-              periodLabel={periodLabel}
-              chartImage={chartImage}
-            />
-          }
-          fileName={`sales-report-${period}.pdf`}
-        >
-          {({ loading }) => (
-            <button
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-              disabled={!chartImage}
-            >
-              {loading ? "Generating PDF..." : "Download PDF"}
-            </button>
-          )}
-        </PDFDownloadLink>
-      </div>
-
-      <div
-        ref={chartRef}
-        style={{ width: "100%", height: 300, background: "#fff" }}
-        className="rounded-lg border border-gray-200 p-2"
-      >
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={salesData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="period" />
-            <YAxis
-              tickFormatter={(v) =>
-                v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v
-              }
-            />
-            <Tooltip
-              formatter={(value: any) => formatCurrency(Number(value))}
-              labelFormatter={(label) => `Period: ${label}`}
-            />
-            <Line
-              type="monotone"
-              dataKey="total"
-              stroke="#2563eb"
-              strokeWidth={3}
-              dot={{ r: 3 }}
-              activeDot={{ r: 6 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={salesData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="period" />
+              <YAxis
+                tickFormatter={(v) =>
+                  v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v
+                }
+              />
+              <Tooltip
+                formatter={(value: any) => formatCurrency(Number(value))}
+                labelFormatter={(label) => `Period: ${label}`}
+              />
+              <Line
+                type="monotone"
+                dataKey="total"
+                stroke="#2563eb"
+                strokeWidth={3}
+                dot={{ r: 3 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Summary Section */}
@@ -350,125 +353,169 @@ const SalesReport: React.FC = () => {
           Top Events by Revenue
         </h3>
         <div className="overflow-x-auto rounded-lg border border-base-200 bg-base-100 shadow mb-6">
-          <table className="min-w-full divide-y divide-base-200">
-            <thead className="bg-base-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-base-content uppercase tracking-wider rounded-tl-lg">
-                  Event
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-base-content uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-base-content uppercase tracking-wider">
-                  Venue
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-base-content uppercase tracking-wider">
-                  Tickets Sold
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-base-content uppercase tracking-wider rounded-tr-lg">
-                  Total Revenue
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-base-100 divide-y divide-base-200">
-              {topEvents.length === 0 ? (
+          <div className="w-full">
+            <table className="min-w-full divide-y divide-base-200 text-sm">
+              <thead className="bg-base-200">
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="text-center py-6 text-base-content/60"
-                  >
-                    No event data available.
-                  </td>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-base-content uppercase tracking-wider rounded-tl-lg">
+                    Event
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-base-content uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-base-content uppercase tracking-wider">
+                    Venue
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-base-content uppercase tracking-wider">
+                    Tickets Sold
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-base-content uppercase tracking-wider rounded-tr-lg">
+                    Total Revenue
+                  </th>
                 </tr>
-              ) : (
-                topEvents.map((stat, idx) => (
-                  <tr
-                    key={stat.event.eventId}
-                    className={idx % 2 === 0 ? "bg-base-100" : "bg-base-200/50"}
-                  >
-                    <td className="px-4 py-3 font-semibold whitespace-nowrap">
-                      {stat.event.eventTitle || "N/A"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {stat.event.eventDate
-                        ? new Date(stat.event.eventDate).toLocaleDateString()
-                        : "N/A"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {stat.event.venue?.venueName || "N/A"}
-                    </td>
-                    <td className="px-4 py-3 text-center font-bold">
-                      {stat.ticketsSold}
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-primary">
-                      {formatCurrency(stat.totalRevenue)}
+              </thead>
+              <tbody className="bg-base-100 divide-y divide-base-200">
+                {topEvents.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="text-center py-6 text-base-content/60"
+                    >
+                      No event data available.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  topEvents.map((stat, idx) => (
+                    <tr
+                      key={stat.event.eventId}
+                      className={idx % 2 === 0 ? "bg-base-100" : "bg-base-200/50"}
+                    >
+                      <td className="px-4 py-3 font-semibold whitespace-nowrap">
+                        {stat.event.eventTitle || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {stat.event.eventDate
+                          ? new Date(stat.event.eventDate).toLocaleDateString()
+                          : "N/A"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {stat.event.venue?.venueName || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 text-center font-bold">
+                        {stat.ticketsSold}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-primary">
+                        {formatCurrency(stat.totalRevenue)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-
       {/* Top Users Table */}
       <div className="mt-10">
         <h3 className="text-xl font-bold mb-3 text-base-content">
           Top Users by Tickets Bought
         </h3>
         <div className="overflow-x-auto rounded-lg border border-base-200 bg-base-100 shadow">
-          <table className="min-w-full divide-y divide-base-200">
-            <thead className="bg-base-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-base-content uppercase tracking-wider rounded-tl-lg">
-                  User
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-base-content uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-base-content uppercase tracking-wider">
-                  Tickets Bought
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-base-content uppercase tracking-wider rounded-tr-lg">
-                  Total Spent
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-base-100 divide-y divide-base-200">
-              {topUsers.length === 0 ? (
+          <div className="w-full">
+            <table className="min-w-full divide-y divide-base-200 text-sm">
+              <thead className="bg-base-200">
                 <tr>
-                  <td
-                    colSpan={4}
-                    className="text-center py-6 text-base-content/60"
-                  >
-                    No user data available.
-                  </td>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-base-content uppercase tracking-wider rounded-tl-lg">
+                    User
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-base-content uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-base-content uppercase tracking-wider">
+                    Tickets Bought
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-base-content uppercase tracking-wider rounded-tr-lg">
+                    Total Spent
+                  </th>
                 </tr>
-              ) : (
-                topUsers.map((user, idx) => (
-                  <tr
-                    key={user.userId}
-                    className={idx % 2 === 0 ? "bg-base-100" : "bg-base-200/50"}
-                  >
-                    <td className="px-4 py-3 font-semibold whitespace-nowrap">
-                      {user.name}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {user.email}
-                    </td>
-                    <td className="px-4 py-3 text-center font-bold">
-                      {user.ticketsBought}
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-primary">
-                      {formatCurrency(user.totalSpent)}
+              </thead>
+              <tbody className="bg-base-100 divide-y divide-base-200">
+                {topUsers.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="text-center py-6 text-base-content/60"
+                    >
+                      No user data available.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  topUsers.map((user, idx) => (
+                    <tr
+                      key={user.userId}
+                      className={idx % 2 === 0 ? "bg-base-100" : "bg-base-200/50"}
+                    >
+                      <td className="px-4 py-3 font-semibold whitespace-nowrap">
+                        {user.name}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {user.email}
+                      </td>
+                      <td className="px-4 py-3 text-center font-bold">
+                        {user.ticketsBought}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-primary">
+                        {formatCurrency(user.totalSpent)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
+      {/* Responsive Table Styles for Mobile */}
+      <style>
+        {`
+          @media (max-width: 640px) {
+            .overflow-x-auto {
+              overflow-x: unset !important;
+            }
+            table.min-w-full, table.min-w-full thead, table.min-w-full tbody, table.min-w-full th, table.min-w-full td, table.min-w-full tr {
+              display: block !important;
+              width: 100% !important;
+            }
+            table.min-w-full thead {
+              display: none !important;
+            }
+            table.min-w-full tr {
+              margin-bottom: 1.5rem;
+              border-radius: 0.75rem;
+              background: #f9fafb;
+              box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+              border: 1px solid #e5e7eb;
+              padding: 1rem;
+            }
+            table.min-w-full td {
+              padding: 0.5rem 1rem !important;
+              text-align: left !important;
+              border: none !important;
+              display: flex !important;
+              justify-content: space-between;
+              align-items: center;
+              font-size: 0.95rem;
+            }
+            table.min-w-full td:before {
+              content: attr(data-label);
+              font-weight: 600;
+              color: #6b7280;
+              flex: 1 0 40%;
+              margin-right: 1rem;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };
