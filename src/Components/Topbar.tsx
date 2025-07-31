@@ -51,7 +51,7 @@ export const Topbar = () => {
               onClick={() => setSidebarOpen(false)}
             />
             <nav
-              className="fixed top-0 left-0 h-full w-72 bg-[#093FB4] text-white z-[100] shadow-2xl flex flex-col"
+              className="fixed top-0 left-0 h-full w-60 bg-[#093FB4] text-white z-[100] shadow-2xl flex flex-col"
               style={{
                 transition: "transform 0.3s",
                 transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
