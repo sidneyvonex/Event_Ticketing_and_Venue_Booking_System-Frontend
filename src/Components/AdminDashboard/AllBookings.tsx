@@ -27,6 +27,7 @@ import {
 import { eventApi } from "../../Features/api/EventApi";
 import { toast, Toaster } from "sonner";
 import type { BookingsDataTypes } from "../../types/types";
+import Swal from "sweetalert2";
 
 export const AllBookings = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -265,10 +266,14 @@ export const AllBookings = () => {
         totalAmount: newTotalAmount,
       }).unwrap();
 
-      toast.success("Booking updated successfully!", {
-        position: "top-right",
+      // Use SweetAlert for success
+      await Swal.fire({
+        icon: "success",
+        title: "Booking updated successfully!",
+        showConfirmButton: false,
+        timer: 1800,
       });
-
+      toast.success("Booking updated successfully!");
       closeEditModal();
       // Don't call refetchBookings() as RTK Query auto-updates due to invalidatesTags
     } catch (error: any) {
@@ -279,56 +284,48 @@ export const AllBookings = () => {
         error?.status === "PARSING_ERROR" &&
         error?.data?.includes("<!DOCTYPE")
       ) {
-        toast.error(
-          "Backend routing error: PUT endpoint not found. Please check backend server.",
-          {
-            position: "top-right",
-            duration: 6000,
-          }
-        );
-        console.error(
-          "Backend appears to be returning HTML instead of JSON. Check if PUT /api/bookings/{id} route exists."
+        Swal.fire(
+          "Backend routing error",
+          "PUT endpoint not found. Please check backend server.",
+          "error"
         );
         return;
       }
-
-      // Handle different types of errors
       if (error?.status === 400) {
-        toast.error("Invalid booking data. Please check your inputs.", {
-          position: "top-right",
-          duration: 4000,
-        });
+        Swal.fire("Invalid booking data", "Please check your inputs.", "error");
       } else if (error?.status === 404) {
-        toast.error(
-          "Booking not found. It may have been deleted by another user.",
-          {
-            position: "top-right",
-            duration: 4000,
-          }
+        Swal.fire(
+          "Booking not found",
+          "It may have been deleted by another user.",
+          "error"
         );
-        // Close modal since booking doesn't exist
         closeEditModal();
       } else if (error?.originalStatus === 404) {
-        toast.error(
-          "Backend endpoint not found. PUT /api/bookings/{id} route may be missing.",
-          {
-            position: "top-right",
-            duration: 6000,
-          }
+        Swal.fire(
+          "Backend endpoint not found",
+          "PUT /api/bookings/{id} route may be missing.",
+          "error"
         );
       } else {
-        toast.error("Failed to update booking. Please try again.", {
-          position: "top-right",
-        });
+        Swal.fire("Failed to update booking", "Please try again.", "error");
       }
     }
   };
 
   const handleDeleteBooking = async (bookingId: number) => {
     if (
-      !window.confirm(
-        "Are you sure you want to delete this booking? This action cannot be undone."
-      )
+      !(
+        await Swal.fire({
+          title: "Are you sure?",
+          text: "Do you want to delete this booking? This action cannot be undone.",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#d33",
+          cancelButtonColor: "#3085d6",
+          confirmButtonText: "Yes, delete it!",
+          cancelButtonText: "No, keep it",
+        })
+      ).isConfirmed
     ) {
       return;
     }
@@ -338,10 +335,13 @@ export const AllBookings = () => {
 
       await deleteBooking(bookingId).unwrap();
 
-      toast.success("Booking deleted successfully!", {
-        position: "top-right",
+      await Swal.fire({
+        icon: "success",
+        title: "Booking deleted successfully!",
+        showConfirmButton: false,
+        timer: 1800,
       });
-
+      toast.success("Booking deleted successfully!");
       // Don't call refetchBookings() as RTK Query auto-updates due to invalidatesTags
     } catch (error: any) {
       console.error("Delete booking error:", error);
@@ -351,47 +351,30 @@ export const AllBookings = () => {
         error?.status === "PARSING_ERROR" &&
         error?.data?.includes("<!DOCTYPE")
       ) {
-        toast.error(
-          "Backend routing error: DELETE endpoint not found. Please check backend server.",
-          {
-            position: "top-right",
-            duration: 6000,
-          }
-        );
-        console.error(
-          "Backend appears to be returning HTML instead of JSON. Check if DELETE /api/bookings/{id} route exists."
+        Swal.fire(
+          "Backend routing error",
+          "DELETE endpoint not found. Please check backend server.",
+          "error"
         );
         return;
       }
-
-      // Handle different types of errors
       if (error?.status === 400) {
-        toast.error("Invalid booking ID.", {
-          position: "top-right",
-          duration: 4000,
-        });
+        Swal.fire("Invalid booking ID.", "", "error");
       } else if (error?.status === 404) {
-        toast.error(
-          "Booking not found. It may have already been deleted by another user.",
-          {
-            position: "top-right",
-            duration: 4000,
-          }
+        Swal.fire(
+          "Booking not found",
+          "It may have already been deleted by another user.",
+          "error"
         );
-        // Force refresh the bookings list to reflect current state
         setTimeout(() => window.location.reload(), 2000);
       } else if (error?.originalStatus === 404) {
-        toast.error(
-          "Backend endpoint not found. DELETE /api/bookings/{id} route may be missing.",
-          {
-            position: "top-right",
-            duration: 6000,
-          }
+        Swal.fire(
+          "Backend endpoint not found",
+          "DELETE /api/bookings/{id} route may be missing.",
+          "error"
         );
       } else {
-        toast.error("Failed to delete booking. Please try again.", {
-          position: "top-right",
-        });
+        Swal.fire("Failed to delete booking", "Please try again.", "error");
       }
     }
   };
@@ -866,7 +849,7 @@ export const AllBookings = () => {
       {/* Booking Details Modal */}
       {isModalOpen && selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-2 sm:p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl max-h-[95vh] overflow-y-auto flex flex-col sm:p-0 p-0">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 shrink-0">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
@@ -1088,7 +1071,7 @@ export const AllBookings = () => {
       {/* Edit Booking Modal */}
       {isEditModalOpen && selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-2 sm:p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-2xl max-h-[95vh] overflow-y-auto flex flex-col">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-2xl max-h-[95vh] overflow-y-auto flex flex-col sm:p-0 p-0">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 shrink-0">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
